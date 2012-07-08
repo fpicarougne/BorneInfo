@@ -107,9 +107,9 @@ void InitEnv()
 
 	if (tcgetattr(STDIN_FILENO,&tp)!=-1)
 	{
-		env.terminal=tp;
+		sEnv.terminal=tp;
 		tp.c_lflag&=~ECHO;
-		if (tcsetattr(STDIN_FILENO,TCSAFLUSH,&tp)!=-1) env.termModified=true;
+		if (tcsetattr(STDIN_FILENO,TCSAFLUSH,&tp)!=-1) sEnv.termModified=true;
 	}
 }
 
@@ -117,10 +117,10 @@ void UninitEnv()
 {
 	std::cout << "\e[?c" << std::flush;
 
-	if (env.termModified)
+	if (sEnv.termModified)
 	{
-		tcsetattr(STDIN_FILENO,TCSANOW,&env.terminal);
-		env.termModified=false;
+		tcsetattr(STDIN_FILENO,TCSANOW,&sEnv.terminal);
+		sEnv.termModified=false;
 	}
 }
 
