@@ -119,6 +119,8 @@ void UninitEnv()
 
 	if (sEnv.termModified)
 	{
+		fflush(stdin);
+		tcflush(STDIN_FILENO,TCIOFLUSH);
 		tcsetattr(STDIN_FILENO,TCSANOW,&sEnv.terminal);
 		sEnv.termModified=false;
 	}
