@@ -29,10 +29,12 @@ struct SEnv
 	struct termios terminal;
 };
 
-void InitEnv(SEnv &env);
-void UninitEnv(SEnv &env);
+void InitEnv();
+void UninitEnv();
 void StartClient();
 void sigint_handler(int sig);
+
+SEnv sEnv;
 
 int main(int argc,char *argv[])
 {
@@ -40,10 +42,9 @@ int main(int argc,char *argv[])
 	int fd[2],status;
 	int nb=0;
 	char c;
-	SEnv sEnv;
 
 	SwitchTTY();
-	InitEnv(sEnv);
+	InitEnv();
 	signal(SIGINT,sigint_handler);
 
 	do
@@ -74,7 +75,7 @@ int main(int argc,char *argv[])
 		return(0);
 	}
 
-	UninitEnv(sEnv);
+	UninitEnv();
 	
 	return(0);
 }
@@ -86,7 +87,7 @@ void sigint_handler(int sig)
 	kill(getpid(),SIGINT);
 }
 
-void InitEnv(SEnv &env)
+void InitEnv()
 {
 	int size;
 	char path[PATH_MAX+1];
@@ -112,11 +113,15 @@ void InitEnv(SEnv &env)
 	}
 }
 
-void UninitEnv(SEnv &env)
+void UninitEnv()
 {
 	std::cout << "\e[?c" << std::flush;
 
-	tcsetattr(STDIN_FILENO,TCSANOW,&env.terminal);
+	if (env.termModified)
+	{
+		tcsetattr(STDIN_FILENO,TCSANOW,&env.terminal);
+		env.termModified=false;
+	}
 }
 
 void ExitError(const char *str)
