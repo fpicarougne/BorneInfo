@@ -49,7 +49,7 @@ bool DestroyMutex(MUTEX &m)
 #ifdef WIN32
 	#error not done
 #else
-	return(pthread_mutex_destroy(m)!=-1);
+	return(pthread_mutex_destroy(&m)!=-1);
 #endif
 }
 

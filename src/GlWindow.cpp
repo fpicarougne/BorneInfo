@@ -329,9 +329,9 @@ void GlWindow::ReadEvent(int fd)
 
 	if ((rb=read(fd,ev,sizeof(ev)))<sizeof(struct input_event)) return;
 
-	for (i=0;i<rb/sizeof(struct input_event);i++)
+	for (i=0;i<int(rb/sizeof(struct input_event));i++)
 	{
-		switch(ev{i].type)
+		switch(ev[i].type)
 		{
 		case EV_KEY:
 std::cout<<"Key"<<std::endl;
