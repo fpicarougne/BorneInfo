@@ -18,18 +18,39 @@
 
 MUTEX OpenUtility::InitMutex()
 {
+#ifdef WIN32
+	#error not done
+#else
 	MUTEX m=PTHREAD_MUTEX_INITIALIZER;
 	return(m);
+#endif
 }
 
 void OpenUtility::MutexLock(MUTEX &m)
 {
+#ifdef WIN32
+	#error not done
+#else
 	pthread_mutex_lock(&m);
+#endif
 }
 
 void OpenUtility::MutexUnlock(MUTEX &m)
 {
+#ifdef WIN32
+	#error not done
+#else
 	pthread_mutex_unlock(&m);
+#endif
+}
+
+bool DestroyMutex(MUTEX &m)
+{
+#ifdef WIN32
+	#error not done
+#else
+	return(pthread_mutex_destroy(m)!=-1);
+#endif
 }
 
 SEMAPHORE OpenUtility::InitSem(int initial,int maximum)
@@ -41,7 +62,7 @@ SEMAPHORE OpenUtility::InitSem(int initial,int maximum)
 #endif
 }
 
-int OpenUtility::WaitSem(SEMAPHORE sem,int msTimeout)
+int OpenUtility::WaitSem(SEMAPHORE &sem,int msTimeout)
 {
 #ifdef WIN32
 	return(WaitForSingleObject(sem,msTimeout));
@@ -76,7 +97,7 @@ int OpenUtility::WaitSem(SEMAPHORE sem,int msTimeout)
 #endif
 }
 
-bool OpenUtility::SignalSem(SEMAPHORE sem,int nb)
+bool OpenUtility::SignalSem(SEMAPHORE &sem,int nb)
 {
 	int toto;
 	if (nb!=1)
@@ -95,7 +116,7 @@ bool OpenUtility::SignalSem(SEMAPHORE sem,int nb)
 #endif
 }
 
-bool OpenUtility::DestroySem(SEMAPHORE sem)
+bool OpenUtility::DestroySem(SEMAPHORE &sem)
 {
 #ifdef WIN32
 	return(CloseHandle(sem)!=0);

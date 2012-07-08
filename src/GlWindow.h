@@ -42,6 +42,7 @@ private:
 	void DestroyOpenGlContext();
 	TH_CALL_BACK_PROTO(EventListenerCB,pParam);
 	void EventListener();
+	void ReadEvent(int fd);
 	void CloseEvents();
 	void MainLoop();
 	void _CloseWindow();

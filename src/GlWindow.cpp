@@ -22,6 +22,7 @@ GlWindow::GlWindow() :
 	idThreadEvent(0),
 	Display(0)
 {
+	// Control end of processes
 	_mutexEnd=OpenUtility::InitMutex();
 	pipe(_fdEnd);
 }
@@ -314,11 +315,72 @@ void GlWindow::EventListener()
 			if (fds[nb].revents & POLLIN) read(_fdEnd[IN],&c,1);
 			for (i=0,data=false;i<nb;i++)
 			{
-				if (fds[i].revents & POLLIN)
-					data=true;
+				if (fds[i].revents & POLLIN) ReadEvent(fds[i].fd);
 			}
+		}
+	}
+}
 
-			if (data) std::cout << retval << std::endl;
+void GlWindow::ReadEvent(int fd)
+{
+	struct input_event ev[64];
+	size_t rb;
+	int i;
+
+	if ((rb=read(fd,ev,sizeof(ev)))<sizeof(struct input_event)) return;
+
+	for (i=0;i<rb/sizeof(struct input_event);i++)
+	{
+		switch(ev{i].type)
+		{
+		case EV_KEY:
+std::cout<<"Key"<<std::endl;
+			switch(ev[i].value)
+			{
+			// Key released
+			case 0:OnKeyDown(ev[i].code);break;
+			// Key pressed
+			case 1:OnKeyUp(ev[i].code);break;
+			// Key keeping pressed
+			case 2:break;
+			}
+			break;
+
+		case EV_REL:
+std::cout<<"Relative"<<std::endl;
+			break;
+
+		case EV_ABS:
+std::cout<<"Absolute"<<std::endl;
+			break;
+
+		case EV_MSC:
+std::cout<<"Miscellious"<<std::endl;
+			break;
+
+		case EV_SW:
+std::cout<<"Switch"<<std::endl;
+			break;
+
+		case EV_LED:
+std::cout<<"Led"<<std::endl;
+			break;
+
+		case EV_SND:
+std::cout<<"Sound"<<std::endl;
+			break;
+
+		case EV_REP:
+std::cout<<"Repeat"<<std::endl;
+			break;
+
+		case EV_FF:
+std::cout<<"Force feedback"<<std::endl;
+			break;
+
+		case EV_PWR:
+std::cout<<"Power"<<std::endl;
+			break;
 		}
 	}
 }

@@ -37,10 +37,11 @@ namespace OpenUtility
 MUTEX InitMutex();
 void MutexLock(MUTEX &m);
 void MutexUnlock(MUTEX &m);
+bool DestroyMutex(MUTEX &m);
 SEMAPHORE InitSem(int initial,int maximum);
-int WaitSem(SEMAPHORE sem,int msTimeout=INFINITE);
-bool SignalSem(SEMAPHORE sem,int nb=1);
-bool DestroySem(SEMAPHORE sem);
+int WaitSem(SEMAPHORE &sem,int msTimeout=INFINITE);
+bool SignalSem(SEMAPHORE &sem,int nb=1);
+bool DestroySem(SEMAPHORE &sem);
 bool CreateThread(THREAD_CALLBACK call_back,void *param,THREAD_ID *thread_id=NULL);
 bool WaitJoinThread(THREAD_ID thread_id);
 void SleepThread(unsigned int msec);
