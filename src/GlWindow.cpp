@@ -309,7 +309,6 @@ void GlWindow::EventListener()
 			bool data;
 			char c;
 
-			std::cout << "before poll" << std::endl;
 			retval=poll(fds,nb+1,-1);
 
 			if (fds[nb].revents & POLLIN) read(_fdEnd[IN],&c,1);

@@ -16,13 +16,21 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <limits.h>
+#include <termios.h>
 #include "borne.h"
 #include "Client.h"
 
 #define FILE_LOG "borne.log"
 
-void InitEnv();
-void UninitEnv();
+struct SEnv
+{
+	SEnv() : termModified(false) {}
+	bool termModified;
+	struct termios terminal;
+};
+
+void InitEnv(SEnv &env);
+void UninitEnv(SEnv &env);
 void StartClient();
 void sigint_handler(int sig);
 
@@ -32,9 +40,10 @@ int main(int argc,char *argv[])
 	int fd[2],status;
 	int nb=0;
 	char c;
+	SEnv sEnv;
 
 	SwitchTTY();
-	InitEnv();
+	InitEnv(sEnv);
 	signal(SIGINT,sigint_handler);
 
 	do
@@ -65,7 +74,7 @@ int main(int argc,char *argv[])
 		return(0);
 	}
 
-	UninitEnv();
+	UninitEnv(sEnv);
 	
 	return(0);
 }
@@ -77,11 +86,12 @@ void sigint_handler(int sig)
 	kill(getpid(),SIGINT);
 }
 
-void InitEnv()
+void InitEnv(SEnv &env)
 {
 	int size;
 	char path[PATH_MAX+1];
 	std::ostringstream str;
+	struct termios tp;
 
 	str << "/proc/" << getpid() << "/exe";
 	if ((size=readlink(str.str().c_str(),path,PATH_MAX))<0) ExitError("Not able to get the path of the exe");
@@ -93,11 +103,20 @@ void InitEnv()
 	PrintLog("global start","\texe path : %s",path);
 
 	std::cout << "\e[2J" << "\e[1;1H" << "\e[?16c" << std::flush;
+
+	if (tcgetattr(STDIN_FILENO,&tp)!=-1)
+	{
+		env.terminal=tp;
+		tp.c_lflag&=~ECHO;
+		if (tcsetattr(STDIN_FILENO,TCSAFLUSH,&tp)!=-1) env.termModified=true;
+	}
 }
 
-void UninitEnv()
+void UninitEnv(SEnv &env)
 {
 	std::cout << "\e[?c" << std::flush;
+
+	tcsetattr(STDIN_FILENO,TCSANOW,&env.terminal);
 }
 
 void ExitError(const char *str)
