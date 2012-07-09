@@ -169,6 +169,9 @@ void GlWindow::OpenWindow()
 	CreateOpenGlContext();
 	OpenUtility::MutexUnlock(_mutexEnd);
 
+	MouseX=ScrWidth/2;
+	MouseY=ScrHeight/2;
+	MouseZ=0;
 	OpenUtility::CreateThread(EventListenerCB,this,&idThreadEvent);
 	MainLoop();
 }
@@ -332,8 +335,12 @@ void GlWindow::ReadEvent(int fd)
 	{
 		switch(ev[i].type)
 		{
+		case EV_SYN:
+std::cout<<"Sync"<<std::endl;
+			break;
+
 		case EV_KEY:
-			if ((ev[i].code<BTN_MOUSE) || (ev[i].code>KEY_OK))
+			if ((ev[i].code<BTN_MOUSE) || (ev[i].code>=KEY_OK))
 			{
 				switch(ev[i].value)
 				{
@@ -350,9 +357,9 @@ void GlWindow::ReadEvent(int fd)
 				switch(ev[i].value)
 				{
 				// Key released
-				case 0:OnMouseButtonUp(ev[i].code-BTN_LEFT,0,0);break;
+				case 0:OnMouseButtonUp(ev[i].code-BTN_LEFT,MouseX,MouseY);break;
 				// Key pressed
-				case 1:OnMouseButtonDown(ev[i].code-BTN_LEFT,0,0);break;
+				case 1:OnMouseButtonDown(ev[i].code-BTN_LEFT,MouseX,MouseY);break;
 				// Key keeping pressed
 				case 2:break;
 				}
@@ -360,7 +367,13 @@ void GlWindow::ReadEvent(int fd)
 			break;
 
 		case EV_REL:
-std::cout<<"Relative"<<std::endl;
+			switch(ev[i].code)
+			{
+			case REL_X:MouseX+=ev[i].value;break;
+			case REL_Y:MouseY+=ev[i].value;break;
+			case REL_Z:MouseZ+=ev[i].value;break;
+			}
+			OnMouseMove(MouseX,MouseY);
 			break;
 
 		case EV_ABS:
@@ -374,6 +387,7 @@ std::cout<<"Absolute"<<std::endl;
 		case EV_REP:
 		case EV_FF:
 		case EV_PWR:
+			break;
 		}
 	}
 }

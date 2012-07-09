@@ -62,7 +62,7 @@ private:
 	EGLContext Context;
 	// Event stuff
 	std::vector<int> _fdEvents;
-	int MouseX,MouseY;
+	int MouseX,MouseY,MouseZ;
 };
 
 #endif

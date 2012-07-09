@@ -54,24 +54,24 @@ timespec Client::DiffTime(timespec start,timespec end)
 	return temp;
 }
 
-void Client::OnKeyDown(char key)
+void Client::OnKeyDown(int keyCode)
 {
-	std::cout << "Press : " << key << std::endl;
+	std::cout << "Press : " << keyCode << std::endl;
 }
 
-void Client::OnKeyUp(char key)
+void Client::OnKeyUp(int keyCode)
 {
-	std::cout << "Release : " << key << std::endl;
+	std::cout << "Release : " << keyCode << std::endl;
 }
 
 void Client::OnMouseButtonDown(int id,int x,int y)
 {
-	std::cout << "Mouse btn #" << id " pressed : x=" << x << " ; y=" << y << std::endl;
+	std::cout << "Mouse btn #" << id << " pressed : x=" << x << " ; y=" << y << std::endl;
 }
 
 void Client::OnMouseButtonUp(int id,int x,int y)
 {
-	std::cout << "Mouse btn #" << id " unpressed : x=" << x << " ; y=" << y << std::endl;
+	std::cout << "Mouse btn #" << id << " unpressed : x=" << x << " ; y=" << y << std::endl;
 }
 
 void Client::OnMouseMove(int x,int y)
