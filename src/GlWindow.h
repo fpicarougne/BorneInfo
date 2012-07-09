@@ -30,9 +30,10 @@ protected:
 	virtual void PreRender() {}
 	virtual void Render() {}
 	// Event catcher
-	virtual void OnKeyDown(char key) {}
-	virtual void OnKeyUp(char key) {}
-	virtual void OnMouseButton(int id,int x,int y) {}
+	virtual void OnKeyDown(int keyCode) {}
+	virtual void OnKeyUp(int keyCode) {}
+	virtual void OnMouseButtonDown(int id,int x,int y) {}
+	virtual void OnMouseButtonUp(int id,int x,int y) {}
 	virtual void OnMouseMove(int x,int y) {}
 
 private:

@@ -333,15 +333,29 @@ void GlWindow::ReadEvent(int fd)
 		switch(ev[i].type)
 		{
 		case EV_KEY:
-std::cout<<"Key"<<std::endl;
-			switch(ev[i].value)
+			if ((ev[i].code<BTN_MOUSE) || (ev[i].code>KEY_OK))
 			{
-			// Key released
-			case 0:OnKeyDown(ev[i].code);break;
-			// Key pressed
-			case 1:OnKeyUp(ev[i].code);break;
-			// Key keeping pressed
-			case 2:break;
+				switch(ev[i].value)
+				{
+				// Key released
+				case 0:OnKeyUp(ev[i].code);break;
+				// Key pressed
+				case 1:OnKeyDown(ev[i].code);break;
+				// Key keeping pressed
+				case 2:break;
+				}
+			}
+			else if ((ev[i].code>=BTN_MOUSE) && (ev[i].code<BTN_JOYSTICK))
+			{
+				switch(ev[i].value)
+				{
+				// Key released
+				case 0:OnMouseButtonUp(ev[i].code-BTN_LEFT,0,0);break;
+				// Key pressed
+				case 1:OnMouseButtonDown(ev[i].code-BTN_LEFT,0,0);break;
+				// Key keeping pressed
+				case 2:break;
+				}
 			}
 			break;
 
@@ -354,32 +368,12 @@ std::cout<<"Absolute"<<std::endl;
 			break;
 
 		case EV_MSC:
-std::cout<<"Miscellious"<<std::endl;
-			break;
-
 		case EV_SW:
-std::cout<<"Switch"<<std::endl;
-			break;
-
 		case EV_LED:
-std::cout<<"Led"<<std::endl;
-			break;
-
 		case EV_SND:
-std::cout<<"Sound"<<std::endl;
-			break;
-
 		case EV_REP:
-std::cout<<"Repeat"<<std::endl;
-			break;
-
 		case EV_FF:
-std::cout<<"Force feedback"<<std::endl;
-			break;
-
 		case EV_PWR:
-std::cout<<"Power"<<std::endl;
-			break;
 		}
 	}
 }
