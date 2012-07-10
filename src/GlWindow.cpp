@@ -173,7 +173,7 @@ void GlWindow::OpenWindow()
 
 	MouseAxes[0]=ScrWidth/2;
 	MouseAxes[1]=ScrHeight/2;
-	MouseAxes{2]=0;
+	MouseAxes[2]=0;
 	OpenUtility::CreateThread(EventListenerCB,this,&idThreadEvent);
 	MainLoop();
 }
@@ -296,7 +296,8 @@ void GlWindow::EventListener()
 		OpenUtility::MutexLock(_mutexEnd);
 
 		struct pollfd fds[_fdEvents.GetSize()+1];
-		int nb,retval,i;
+		unsigned int nb;
+		int retval,i;
 
 		for (nb=0;nb<_fdEvents.GetSize();nb++)
 		{
@@ -328,7 +329,8 @@ void GlWindow::ReadEvent(int fd)
 {
 	struct input_event ev[64];
 	size_t rb;
-	int i,nb;
+	unsigned int i,nb;
+	SEventKey evt;
 
 	if ((rb=read(fd,ev,sizeof(ev)))<sizeof(struct input_event)) return;
 
@@ -379,8 +381,18 @@ void GlWindow::ReadEvent(int fd)
 			break;
 
 		case EV_KEY:
-			if ((ev[i].code<BTN_MOUSE) || (ev[i].code>=KEY_OK)) _SynKey.Add(SEventKey(ev[i].value,ev[i].code));
-			else if ((ev[i].code>=BTN_MOUSE) && (ev[i].code<BTN_JOYSTICK)) _SynMouseBt.Add(SEventKey(ev[i].value,ev[i].code-BTN_LEFT));
+			if ((ev[i].code<BTN_MOUSE) || (ev[i].code>=KEY_OK))
+			{
+				evt.type=ev[i].value;
+				evt.code=ev[i].code;
+				_SynKey.Add(evt);
+			}
+			else if ((ev[i].code>=BTN_MOUSE) && (ev[i].code<BTN_JOYSTICK))
+			{
+				evt.type=ev[i].value;
+				evt.code=ev[i].code;
+				_SynMouseBt.Add(evt);
+			}
 			break;
 
 		case EV_REL:
@@ -408,7 +420,7 @@ void GlWindow::CloseEvents()
 	std::cout << "CloseEvents" << std::endl;
 	OpenUtility::MutexLock(_mutexEnd);
 
-	for (int i=0;i<_fdEvents.GetSize();i++)
+	for (unsigned int i=0;i<_fdEvents.GetSize();i++)
 		close(_fdEvents[i]);
 	_fdEvents.DeleteAll();
 	write(_fdEnd[OUT],"",1);
@@ -459,7 +471,7 @@ void GlWindow::SEventAxe<T,N>::SetAxeChange(int axe,T val)
 }
 
 template<class T,int N>
-void GlWindow::SEventAxe<T,N>::SetMouse(T _axe[N],bool relative)
+void GlWindow::SEventAxe<T,N>::SetAxe(T _axe[N],bool relative)
 {
 	for (int i=0;i<N;i++)
 	{

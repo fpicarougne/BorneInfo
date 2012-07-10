@@ -7,7 +7,7 @@
 #include <EGL/eglext.h>
 #include <Utility/MultiThread.h>
 #include <iostream>
-#include <Template/Table.h>
+#include <Template/CTable.h>
 
 class GlWindow
 {
@@ -91,10 +91,10 @@ private:
 	EGLSurface Surface;
 	EGLContext Context;
 	// Event stuff
-	CTable<int> _fdEvents;
-	CTable<SEventKey> _SynKey;
-	CTable<SEventKey> _SynMouseBt;
-	SEventAxe<int,10> _SynMouse,
+	OpenUtility::CTable<int> _fdEvents;
+	OpenUtility::CTable<SEventKey> _SynKey;
+	OpenUtility::CTable<SEventKey> _SynMouseBt;
+	SEventAxe<int,10> _SynMouse;
 	int MouseAxes[10];
 };
 
