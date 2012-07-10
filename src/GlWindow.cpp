@@ -296,8 +296,8 @@ void GlWindow::EventListener()
 		OpenUtility::MutexLock(_mutexEnd);
 
 		struct pollfd fds[_fdEvents.GetSize()+1];
-		unsigned int nb;
-		int retval,i;
+		unsigned int nb,i;
+		int retval;
 
 		for (nb=0;nb<_fdEvents.GetSize();nb++)
 		{
@@ -342,14 +342,14 @@ void GlWindow::ReadEvent(int fd)
 		case EV_SYN:
 			if (_SynKey.GetSize())
 			{
-				for (i=0;i<_SynKey.GetSize();i++)
+				for (unsigned int j=0;j<_SynKey.GetSize();j++)
 				{
-					switch(_SynKey[i].type)
+					switch(_SynKey[j].type)
 					{
 					// Key released
-					case 0:OnKeyUp(_SynKey[i].code);break;
+					case 0:OnKeyUp(_SynKey[j].code);break;
 					// Key pressed
-					case 1:OnKeyDown(_SynKey[i].code);break;
+					case 1:OnKeyDown(_SynKey[j].code);break;
 					// Key keeping pressed
 					case 2:break;
 					}
@@ -364,14 +364,14 @@ void GlWindow::ReadEvent(int fd)
 			}
 			if (_SynMouseBt.GetSize())
 			{
-				for (i=0;i<_SynMouseBt.GetSize();i++)
+				for (unsigned int j=0;j<_SynMouseBt.GetSize();j++)
 				{
-					switch(_SynMouseBt[i].type)
+					switch(_SynMouseBt[j].type)
 					{
 					// Button released
-					case 0:OnMouseButtonUp(_SynMouseBt[i].code,MouseAxes[0],MouseAxes[1]);break;
+					case 0:OnMouseButtonUp(_SynMouseBt[j].code,MouseAxes[0],MouseAxes[1]);break;
 					// Button pressed
-					case 1:OnMouseButtonDown(_SynMouseBt[i].code,MouseAxes[0],MouseAxes[1]);break;
+					case 1:OnMouseButtonDown(_SynMouseBt[j].code,MouseAxes[0],MouseAxes[1]);break;
 					// Button keeping pressed
 					case 2:break;
 					}
@@ -390,13 +390,13 @@ void GlWindow::ReadEvent(int fd)
 			else if ((ev[i].code>=BTN_MOUSE) && (ev[i].code<BTN_JOYSTICK))
 			{
 				evt.type=ev[i].value;
-				evt.code=ev[i].code;
+				evt.code=ev[i].code-BTN_MOUSE;
 				_SynMouseBt.Add(evt);
 			}
 			break;
 
 		case EV_REL:
-			SetAxeChange(ev[i].code,ev[i].value);
+			_SynMouse.SetAxeChange(ev[i].code,ev[i].value);
 			break;
 
 		case EV_ABS:

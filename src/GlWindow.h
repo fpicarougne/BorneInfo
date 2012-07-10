@@ -21,6 +21,7 @@ private:
 
 	struct SEventKey
 	{
+		SEventKey() {}
 		SEventKey(int _type,int _code) : type(_type),code(_code) {}
 		int type;
 		int code;
