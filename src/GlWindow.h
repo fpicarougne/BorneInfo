@@ -7,10 +7,40 @@
 #include <EGL/eglext.h>
 #include <Utility/MultiThread.h>
 #include <iostream>
-#include <vector>
+#include <Template/Table.h>
 
 class GlWindow
 {
+private:
+	enum EKeyEventType
+	{
+		EKEpress=0,
+		EKEunpress=1,
+		EKEkeep=2
+	};
+
+	struct SEventKey
+	{
+		SEventKey(int _type,int _code) : type(_type),code(_code) {}
+		int type;
+		int code;
+	};
+
+	template<class T,int N> class SEventAxe
+	{
+	public:
+		SEventAxe() {Init();}
+		void Init();
+		inline bool hasChanged() {return(_changed);}
+		void SetAxeChange(int axe,T val);
+		void SetAxe(T _axe[N],bool relative=true);
+
+	private:
+		T Axe[N];
+		bool bAxe[N];
+		bool _changed;
+	};
+
 public:
 	GlWindow();
 	virtual ~GlWindow();
@@ -61,8 +91,11 @@ private:
 	EGLSurface Surface;
 	EGLContext Context;
 	// Event stuff
-	std::vector<int> _fdEvents;
-	int MouseX,MouseY,MouseZ;
+	CTable<int> _fdEvents;
+	CTable<SEventKey> _SynKey;
+	CTable<SEventKey> _SynMouseBt;
+	SEventAxe<int,10> _SynMouse,
+	int MouseAxes[10];
 };
 
 #endif

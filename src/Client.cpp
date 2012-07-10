@@ -76,4 +76,5 @@ void Client::OnMouseButtonUp(int id,int x,int y)
 
 void Client::OnMouseMove(int x,int y)
 {
+	std::cout << "Mouse move : x=" << x << " ; y=" << y << std::endl;
 }
