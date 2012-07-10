@@ -18,9 +18,9 @@ protected:
 	void Render();
 	void OnKeyDown(int keyCode);
 	void OnKeyUp(int keyCode);
-	void OnMouseButtonDown(int id,int x,int y);
-	void OnMouseButtonUp(int id,int x,int y);
-	void OnMouseMove(int x,int y);
+	void OnMouseButtonDown(int id,int x,int y,int z);
+	void OnMouseButtonUp(int id,int x,int y,int z);
+	void OnMouseMove(int x,int y,int z);
 
 private:
 	timespec DiffTime(timespec start,timespec end);

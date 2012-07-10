@@ -26,6 +26,7 @@ GlWindow::GlWindow() :
 {
 	// Control end of processes
 	_mutexEnd=OpenUtility::InitMutex();
+	_mutexMouse=OpenUtility::InitMutex();
 	pipe(_fdEnd);
 }
 
@@ -34,6 +35,8 @@ GlWindow::~GlWindow()
 	CloseWindow();
 	close(_fdEnd[IN]);
 	close(_fdEnd[OUT]);
+	OpenUtility::DestroyMutex(_mutexMouse);
+	OpenUtility::DestroyMutex(_mutexEnd);
 }
 
 TH_CALL_BACK(GlWindow,EventListenerCB,pParam)
@@ -137,7 +140,6 @@ bool GlWindow::CreateOpenGlContext()
 	check();
 
 	return(true);
-
 /*
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
@@ -174,6 +176,8 @@ void GlWindow::OpenWindow()
 	MouseAxes[0]=ScrWidth/2;
 	MouseAxes[1]=ScrHeight/2;
 	MouseAxes[2]=0;
+	_LimitMouseMove=true;
+
 	OpenUtility::CreateThread(EventListenerCB,this,&idThreadEvent);
 	MainLoop();
 }
@@ -358,20 +362,43 @@ void GlWindow::ReadEvent(int fd)
 			}
 			if (_SynMouse.hasChanged())
 			{
+				int x,y,z;
+
+				OpenUtility::MutexLock(_mutexMouse);
 				_SynMouse.SetAxe(MouseAxes);
+				if (_LimitMouseMove)
+				{
+					if (MouseAxes[0]<0) MouseAxes[0]=0;
+					else if (MouseAxes[0]>ScrWidth) MouseAxes[0]=ScrWidth;
+					if (MouseAxes[1]<0) MouseAxes[1]=0;
+					else if (MouseAxes[1]>ScrHeight) MouseAxes[1]=ScrHeight;
+				}
+				x=MouseAxes[0];
+				y=MouseAxes[1];
+				z=MouseAxes[2];
+				OpenUtility::MutexUnlock(_mutexMouse);
+
 				_SynMouse.Init();
-				OnMouseMove(MouseAxes[0],MouseAxes[1]);
+				OnMouseMove(x,y,z);
 			}
 			if (_SynMouseBt.GetSize())
 			{
+				int x,y,z;
+
+				OpenUtility::MutexLock(_mutexMouse);
+				x=MouseAxes[0];
+				y=MouseAxes[1];
+				z=MouseAxes[2];
+				OpenUtility::MutexUnlock(_mutexMouse);
+
 				for (unsigned int j=0;j<_SynMouseBt.GetSize();j++)
 				{
 					switch(_SynMouseBt[j].type)
 					{
 					// Button released
-					case 0:OnMouseButtonUp(_SynMouseBt[j].code,MouseAxes[0],MouseAxes[1]);break;
+					case 0:OnMouseButtonUp(_SynMouseBt[j].code,x,y,z);break;
 					// Button pressed
-					case 1:OnMouseButtonDown(_SynMouseBt[j].code,MouseAxes[0],MouseAxes[1]);break;
+					case 1:OnMouseButtonDown(_SynMouseBt[j].code,x,y,z);break;
 					// Button keeping pressed
 					case 2:break;
 					}
@@ -481,4 +508,13 @@ void GlWindow::SEventAxe<T,N>::SetAxe(T _axe[N],bool relative)
 			else _axe[i]=Axe[i];
 		}
 	}
+}
+
+void GlWindow::SetMousePos(int x,int y,int z)
+{
+	OpenUtility::MutexLock(_mutexMouse);
+	MouseAxes[0]=x;
+	MouseAxes[1]=y;
+	MouseAxes[2]=z;
+	OpenUtility::MutexUnlock(_mutexMouse);
 }

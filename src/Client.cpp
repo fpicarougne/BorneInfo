@@ -64,17 +64,17 @@ void Client::OnKeyUp(int keyCode)
 	std::cout << "Release : " << keyCode << std::endl;
 }
 
-void Client::OnMouseButtonDown(int id,int x,int y)
+void Client::OnMouseButtonDown(int id,int x,int y,int z)
 {
-	std::cout << "Mouse btn #" << id << " pressed : x=" << x << " ; y=" << y << std::endl;
+	std::cout << "Mouse btn #" << id << " pressed : x=" << x << " ; y=" << y << " ; z=" << z  << std::endl;
 }
 
-void Client::OnMouseButtonUp(int id,int x,int y)
+void Client::OnMouseButtonUp(int id,int x,int y,int z)
 {
-	std::cout << "Mouse btn #" << id << " unpressed : x=" << x << " ; y=" << y << std::endl;
+	std::cout << "Mouse btn #" << id << " unpressed : x=" << x << " ; y=" << y << " ; z=" << z  << std::endl;
 }
 
-void Client::OnMouseMove(int x,int y)
+void Client::OnMouseMove(int x,int y,int z)
 {
-	std::cout << "Mouse move : x=" << x << " ; y=" << y << std::endl;
+	std::cout << "Mouse move : x=" << x << " ; y=" << y << " ; z=" << z << std::endl;
 }

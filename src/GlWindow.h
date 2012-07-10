@@ -63,9 +63,11 @@ protected:
 	// Event catcher
 	virtual void OnKeyDown(int keyCode) {}
 	virtual void OnKeyUp(int keyCode) {}
-	virtual void OnMouseButtonDown(int id,int x,int y) {}
-	virtual void OnMouseButtonUp(int id,int x,int y) {}
-	virtual void OnMouseMove(int x,int y) {}
+	virtual void OnMouseButtonDown(int id,int x,int y,int z) {}
+	virtual void OnMouseButtonUp(int id,int x,int y,int z) {}
+	virtual void OnMouseMove(int x,int y,int z) {}
+	void SetMousePos(int x,int y,int z);
+	inline void SetMouseLimit(bool enable=true) {_LimitMouseMove=enable;}
 
 private:
 	GlWindow(const GlWindow &obj) {}
@@ -92,11 +94,13 @@ private:
 	EGLSurface Surface;
 	EGLContext Context;
 	// Event stuff
+	MUTEX _mutexMouse;
 	OpenUtility::CTable<int> _fdEvents;
 	OpenUtility::CTable<SEventKey> _SynKey;
 	OpenUtility::CTable<SEventKey> _SynMouseBt;
 	SEventAxe<int,10> _SynMouse;
 	int MouseAxes[10];
+	bool _LimitMouseMove;
 };
 
 #endif
