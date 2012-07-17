@@ -6,23 +6,28 @@
 #include <ctype.h>
 #include <Utility/FileHandling.h>
 #include <Utility/Stream.h>
-#include <linux/input.h>
 #include <sys/types.h>
 #include <sys/time.h> 
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <poll.h>
+#include <sys/inotify.h>
+#include <limits.h>
 #include "borne.h"
 
 #define check() assert(glGetError()==0)
 
+
+// ----- GlWindow
+// -------------------------------------
+
 GlWindow::GlWindow() :
-	_end(true),
-	idThreadEvent(0),
-	Display(0),
-	_SynKey(5),
-	_SynMouseBt(5)
+	_end(true)
+	,idThreadEvent(0)
+	,Display(0)
+//	_SynKey(5),
+//	,_SynMouseBt(5)
 {
 	// Control end of processes
 	_mutexEnd=OpenUtility::InitMutex();
@@ -35,6 +40,7 @@ GlWindow::~GlWindow()
 	CloseWindow();
 	close(_fdEnd[IN]);
 	close(_fdEnd[OUT]);
+	ListPeriph.DeleteAll();
 	OpenUtility::DestroyMutex(_mutexMouse);
 	OpenUtility::DestroyMutex(_mutexEnd);
 }
@@ -173,11 +179,6 @@ void GlWindow::OpenWindow()
 	CreateOpenGlContext();
 	OpenUtility::MutexUnlock(_mutexEnd);
 
-	MouseAxes[0]=ScrWidth/2;
-	MouseAxes[1]=ScrHeight/2;
-	MouseAxes[2]=0;
-	_LimitMouseMove=true;
-
 	OpenUtility::CreateThread(EventListenerCB,this,&idThreadEvent);
 	MainLoop();
 }
@@ -210,9 +211,6 @@ void GlWindow::_CloseWindow()
 	OpenUtility::MutexUnlock(_mutexEnd);
 }
 
-#define LONG_BITS (sizeof(long) * 8)
-#define TestBit(bit, array) (array[(bit) / LONG_BITS]) & (1L << ((bit) % LONG_BITS))
-
 void GlWindow::EventListener()
 {
 	OpenUtility::DIRHANDLE dirH;
@@ -220,214 +218,393 @@ void GlWindow::EventListener()
 	if ((dirH=OpenUtility::InitDirList("/dev/input",OpenUtility::ONLY_FILE))!=NULL)
 	{
 		OpenUtility::CStream file;
-		char model[]="event";
 
 		CloseEvents();
 		OpenUtility::MutexLock(_mutexEnd);
 
 		while (OpenUtility::GetNextDirFile(dirH,file))
+			AddPeripheral(file.GetStream());
+		OpenUtility::ReleaseDirList(dirH);
+
+		unsigned int fdI,wd;
+
+		fdI=inotify_init();
+		wd=inotify_add_watch(fdI,"/dev/input",IN_CREATE);
+
+		OpenUtility::MutexUnlock(_mutexEnd);
+
+		struct pollfd *fds=NULL;
+		OpenUtility::CListe<SPeripheral>::CListeIterator *tabPeriph=NULL;
+		bool initPoll;
+		unsigned int nb,i,rNb;
+		struct inotify_event *event;
+		char buffer[(sizeof(struct inotify_event)+(FILENAME_MAX/sizeof(struct inotify_event)+1)*sizeof(struct inotify_event)+1)*100];
+
+		initPoll=true;
+		while (!_request_end)
 		{
-			bool find=false;
-			unsigned int i;
+			char c;
 
-			i=0;
-			while ((!find) && (model[i]!='\0') && (file.GetStream()[i]!='\0') && (model[i]==file.GetStream()[i])) i++;
-			if (model[i]=='\0')
+			if (initPoll)
 			{
-				while (isdigit(file.GetStream()[i])) i++;
-				if (file.GetStream()[i]=='\0')
+				OpenUtility::MutexLock(_mutexEnd);
+
+				fds=(struct pollfd*)realloc(fds,(ListPeriph.GetSize()+2)*sizeof(struct pollfd));
+				delete[] tabPeriph;
+				tabPeriph=new OpenUtility::CListe<SPeripheral>::CListeIterator[ListPeriph.GetSize()];
+
+				for (nb=0;nb<ListPeriph.GetSize();nb++)
 				{
-					OpenUtility::CStream url("/dev/input/");
-					char name[256]= "Unknown";
-					int fd=-1;
-					long bitmask[EV_CNT];
-					long bit;
+					fds[nb].fd=ListPeriph[nb]->GetFdEvent();
+					fds[nb].events=POLLIN;
+					ListPeriph.ElementAt(nb,&tabPeriph[nb]);
+				}
+				fds[nb].fd=fdI;
+				fds[nb].events=POLLIN;
+				fds[nb+1].fd=_fdEnd[IN];
+				fds[nb+1].events=POLLIN;
 
-					url+=file;
-					std::cout << url << std::endl;
-					if ((fd=open(url.GetStream(),O_RDONLY))<0) break;
-					std::cout << "open" << std::endl;
-					if (ioctl(fd,EVIOCGNAME(sizeof(name)),name)<0)
+				OpenUtility::MutexUnlock(_mutexEnd);
+
+				initPoll=false;
+			}
+
+			if (poll(fds,nb+2,-1)<0)
+				break;
+
+			if (fds[nb+1].revents & POLLIN) read(_fdEnd[IN],&c,1);
+			if (fds[nb].revents & POLLIN)
+			{
+				rNb=read(fdI,buffer,sizeof(buffer));
+				unsigned int ri=0;
+				while (ri<rNb)
+				{
+					event=(struct inotify_event*)&buffer[ri];
+					if (event->mask & IN_CREATE)
 					{
-						std::cout << "failed name" << std::endl;
-						close(fd);
-						break;
-					}
-					std::cout << file << " : " << name << std::endl;
-					memset(bitmask,0,sizeof(bitmask));
-					if (ioctl(fd,EVIOCGBIT(0,sizeof(bitmask)),bitmask)<0)
-					{
-						std::cout << "failed bit" << std::endl;
-						close(fd);
-						break;
-					}
-					for (bit=0;bit<EV_MAX;bit++)
-					{
-						if (TestBit(bit,bitmask))
+						// New file in the input event directory
+						if (event->len)
 						{
-							switch (bit)
-							{
-							case EV_SYN: std::cout << "\tSynch Events" << std::endl;break;
-							case EV_KEY: std::cout << "\tKeys or Buttons" << std::endl;break;
-							case EV_REL: std::cout << "\tRelative Axes" << std::endl;break;
-							case EV_ABS: std::cout << "\tAbsolute Axes" << std::endl;break;
-							case EV_MSC: std::cout << "\tMiscellaneous" << std::endl;break;
-							case EV_LED: std::cout << "\tLEDs" << std::endl;break;
-							case EV_SND: std::cout << "\tSounds" << std::endl;break;
-							case EV_REP: std::cout << "\tRepeat" << std::endl;break;
-							case EV_FF:
-							case EV_FF_STATUS: std::cout << "\tForce Feedback" << std::endl;break;
-							case EV_PWR: std::cout << "\tPower Management" << std::endl;break;
-
-							default:
-								std::cout << "\tUnknown" << std::endl;
-							}
+							OpenUtility::MutexLock(_mutexEnd);
+							AddPeripheral(event->name);
+							OpenUtility::MutexUnlock(_mutexEnd);
 						}
+						initPoll=true;
 					}
+					ri+=sizeof(struct inotify_event)+event->len;
+				}
+			}
+			for (i=0;i<nb;i++)
+			{
+				if (fds[i].revents & (POLLERR|POLLHUP))
+				{
+					// Disconnection of the device
+					OpenUtility::MutexLock(_mutexEnd);
+					RemovePeripheral(tabPeriph[i]);
+					OpenUtility::MutexUnlock(_mutexEnd);
 
-					// Store file descriptor to check events
-					std::cout << "\nPush event fd " << fd << std::endl << std::endl;
-					_fdEvents.Add(fd);
+					initPoll=true;
+				}
+				else if (fds[i].revents & POLLIN)
+				{
+					OpenUtility::MutexLock(_mutexEnd);
+					if (ListPeriph.GetSize()) ReadEvent(ListPeriph[tabPeriph[i]]);
+					OpenUtility::MutexUnlock(_mutexEnd);
 				}
 			}
 		}
-		OpenUtility::ReleaseDirList(dirH);
-
-		OpenUtility::MutexUnlock(_mutexEnd);
-
-		std::cout << std::endl << "start event listener" << std::endl;
-
-		OpenUtility::MutexLock(_mutexEnd);
-
-		struct pollfd fds[_fdEvents.GetSize()+1];
-		unsigned int nb,i;
-		int retval;
-
-		for (nb=0;nb<_fdEvents.GetSize();nb++)
-		{
-			fds[nb].fd=_fdEvents[nb];
-			fds[nb].events=POLLIN;
-		}
-		fds[nb].fd=_fdEnd[IN];
-		fds[nb].events=POLLIN;
-
-		OpenUtility::MutexUnlock(_mutexEnd);
-
-		while (!_request_end)
-		{
-			bool data;
-			char c;
-
-			retval=poll(fds,nb+1,-1);
-
-			if (fds[nb].revents & POLLIN) read(_fdEnd[IN],&c,1);
-			for (i=0,data=false;i<nb;i++)
-			{
-				if (fds[i].revents & POLLIN) ReadEvent(fds[i].fd);
-			}
-		}
+		inotify_rm_watch(fdI,wd);
+		free(fds);
+		delete[] tabPeriph;
 	}
 }
 
-void GlWindow::ReadEvent(int fd)
+bool GlWindow::AddPeripheral(char *file)
+{
+	char model[]="event";
+	bool find=false;
+	unsigned int i;
+
+	i=0;
+	while ((!find) && (model[i]!='\0') && (file[i]!='\0') && (model[i]==file[i])) i++;
+	if (model[i]!='\0') return(false);
+
+	while (isdigit(file[i])) i++;
+	if (file[i]!='\0') return(false);
+
+	OpenUtility::CStream url("/dev/input/");
+	int fd=-1;
+	url+=file;
+	if ((fd=open(url.GetStream(),O_RDONLY))<0) return(false);
+
+	SPeripheral *periph;
+	if ((periph=SPeripheral::GenPeripheral(fd))==NULL) return(false);
+
+	ListPeriph.Add(periph);
+	OnPeripheralAdd(periph->GetId(),periph->GetName(),periph->GetType());
+
+	return(true);
+}
+
+bool GlWindow::RemovePeripheral(OpenUtility::CListe<SPeripheral>::CListeIterator &pos)
+{
+	SPeripheral* periph=ListPeriph.Remove(pos);
+	OnPeripheralRemove(periph->GetId(),periph->GetName());
+	delete periph;
+
+	return(true);
+}
+
+void GlWindow::ReadEvent(SPeripheral *periph)
 {
 	struct input_event ev[64];
 	size_t rb;
-	unsigned int i,nb;
-	SEventKey evt;
+	unsigned int i,nb,id;
 
-	if ((rb=read(fd,ev,sizeof(ev)))<sizeof(struct input_event)) return;
+	if ((rb=read(periph->GetFdEvent(),ev,sizeof(ev)))<sizeof(struct input_event)) return;
 
+	id=periph->GetId();
 	nb=int(rb/sizeof(struct input_event));
 	for (i=0;i<nb;i++)
 	{
 		switch(ev[i].type)
 		{
 		case EV_SYN:
-			if (_SynKey.GetSize())
+			OpenUtility::CTable<SEventValue> *_SynEvt;
+			if (periph->GetKeys() && periph->GetKeys()->_SynKey.GetSize())
 			{
-				for (unsigned int j=0;j<_SynKey.GetSize();j++)
+				_SynEvt=&periph->GetKeys()->_SynKey;
+				for (unsigned int j=0;ListPeriph.GetSize() && (j<_SynEvt->GetSize());j++)
 				{
-					switch(_SynKey[j].type)
+					int val=_SynEvt->ElementAt(j).value;
+					switch(_SynEvt->ElementAt(j).type)
 					{
 					// Key released
-					case 0:OnKeyUp(_SynKey[j].code);break;
+					case 0:
+						if ((val>=BTN_MOUSE) && (val<BTN_JOYSTICK))
+						{
+							int x=0,y=0;
+							if (periph->GetAxes())
+							{
+								if (TEST_BIT(AXE_X,periph->GetAxes()->AxeMap)) x=periph->GetAxes()->AxeValues[AXE_X].GetValue();
+								if (TEST_BIT(AXE_Y,periph->GetAxes()->AxeMap)) x=periph->GetAxes()->AxeValues[AXE_Y].GetValue();
+							}
+							OpenUtility::MutexUnlock(_mutexEnd);
+							OnMouseButtonUp(id,val-BTN_MOUSE,x,y);
+							OpenUtility::MutexLock(_mutexEnd);
+						}
+						else
+						{
+							OpenUtility::MutexUnlock(_mutexEnd);
+							if ((val>=BTN_MISC) && (val<BTN_MOUSE)) OnButtonUp(periph->GetId(),val-BTN_MISC);
+							else if ((val>=BTN_JOYSTICK) && (val<BTN_GAMEPAD)) OnJoystickButtonUp(id,val-BTN_JOYSTICK);
+							else if ((val>=BTN_GAMEPAD) && (val<BTN_DIGI)) OnGamepadButtonUp(id,val-BTN_GAMEPAD);
+							else OnKeyUp(id,val);
+							OpenUtility::MutexLock(_mutexEnd);
+						}
+						break;
 					// Key pressed
-					case 1:OnKeyDown(_SynKey[j].code);break;
+					case 1:
+						if ((val>=BTN_MOUSE) && (val<BTN_JOYSTICK))
+						{
+							double x=0,y=0;
+							if (periph->GetAxes())
+							{
+								if (TEST_BIT(AXE_X,periph->GetAxes()->AxeMap)) x=periph->GetAxes()->AxeValues[AXE_X].GetValue();
+								if (TEST_BIT(AXE_Y,periph->GetAxes()->AxeMap)) y=periph->GetAxes()->AxeValues[AXE_Y].GetValue();
+							}
+							OpenUtility::MutexUnlock(_mutexEnd);
+							OnMouseButtonDown(id,val-BTN_MOUSE,x,y);
+							OpenUtility::MutexLock(_mutexEnd);
+						}
+						else
+						{
+							OpenUtility::MutexUnlock(_mutexEnd);
+							if ((val>=BTN_MISC) && (val<BTN_MOUSE)) OnButtonDown(id,val-BTN_MISC);
+							else if ((val>=BTN_JOYSTICK) && (val<BTN_GAMEPAD)) OnJoystickButtonDown(id,val-BTN_JOYSTICK);
+							else if ((val>=BTN_GAMEPAD) && (val<BTN_DIGI)) OnGamepadButtonDown(id,val-BTN_GAMEPAD);
+							else OnKeyDown(id,val);
+							OpenUtility::MutexLock(_mutexEnd);
+						}
+						break;
 					// Key keeping pressed
 					case 2:break;
 					}
 				}
-				_SynKey.DeleteAll();
+				if (ListPeriph.GetSize()) _SynEvt->DeleteAll();
 			}
-			if (_SynMouse.hasChanged())
+			if (periph->GetAxes() && periph->GetAxes()->_SynAxe.GetSize())
 			{
-				int x,y,z;
+				long AxeMap[NLONGS(AXE_UNKNOWN+1)];
+				_SynEvt=&periph->GetAxes()->_SynAxe;
+				bzero(AxeMap,NLONGS(AXE_UNKNOWN+1)*sizeof(long));
 
-				OpenUtility::MutexLock(_mutexMouse);
-				_SynMouse.SetAxe(MouseAxes);
-				if (_LimitMouseMove)
+				for (unsigned int j=0;j<_SynEvt->GetSize();j++)
 				{
-					if (MouseAxes[0]<0) MouseAxes[0]=0;
-					else if (MouseAxes[0]>ScrWidth) MouseAxes[0]=ScrWidth;
-					if (MouseAxes[1]<0) MouseAxes[1]=0;
-					else if (MouseAxes[1]>ScrHeight) MouseAxes[1]=ScrHeight;
-				}
-				x=MouseAxes[0];
-				y=MouseAxes[1];
-				z=MouseAxes[2];
-				OpenUtility::MutexUnlock(_mutexMouse);
+					int type=_SynEvt->ElementAt(j).type;
+					int val=_SynEvt->ElementAt(j).value;
+					EPeriphAxe axe=AXE_UNKNOWN;
 
-				_SynMouse.Init();
-				OnMouseMove(x,y,z);
-			}
-			if (_SynMouseBt.GetSize())
-			{
-				int x,y,z;
-
-				OpenUtility::MutexLock(_mutexMouse);
-				x=MouseAxes[0];
-				y=MouseAxes[1];
-				z=MouseAxes[2];
-				OpenUtility::MutexUnlock(_mutexMouse);
-
-				for (unsigned int j=0;j<_SynMouseBt.GetSize();j++)
-				{
-					switch(_SynMouseBt[j].type)
+					switch(_SynEvt->ElementAt(j).data)
 					{
-					// Button released
-					case 0:OnMouseButtonUp(_SynMouseBt[j].code,x,y,z);break;
-					// Button pressed
-					case 1:OnMouseButtonDown(_SynMouseBt[j].code,x,y,z);break;
-					// Button keeping pressed
-					case 2:break;
+					case EETrel:
+						axe=GetAxeBit(type,true);
+						if (periph->GetAxes() && TEST_BIT(axe,periph->GetAxes()->AxeMap))
+							periph->GetAxes()->AxeValues[axe].SetRelativeValue(val);
+						break;
+
+					case EETabs:
+						axe=GetAxeBit(type,false);
+						if (periph->GetAxes() && TEST_BIT(axe,periph->GetAxes()->AxeMap))
+							periph->GetAxes()->AxeValues[axe].SetValue(val);
+						break;
+
+					default:
+						break;
+					}
+					SET_BIT(axe,AxeMap);
+				}
+				_SynEvt->DeleteAll();
+
+				switch(periph->GetType())
+				{
+				case EPTmouse:
+					if (TEST_BIT(AXE_X,AxeMap) || TEST_BIT(AXE_Y,AxeMap))
+					{
+						double x=0,y=0;
+						if (periph->GetAxes() && TEST_BIT(AXE_X,periph->GetAxes()->AxeMap)) x=periph->GetAxes()->AxeValues[AXE_X].GetValue();
+						if (periph->GetAxes() && TEST_BIT(AXE_Y,periph->GetAxes()->AxeMap)) y=periph->GetAxes()->AxeValues[AXE_Y].GetValue();
+
+						OpenUtility::MutexUnlock(_mutexEnd);
+						OnMouseMove(id,x,y);
+						OpenUtility::MutexLock(_mutexEnd);
+
+						UNSET_BIT(AXE_X,AxeMap);
+						UNSET_BIT(AXE_Y,AxeMap);
+					}
+					break;
+
+				case EPT6axis:
+					if (TEST_BIT(AXE_X,AxeMap) || TEST_BIT(AXE_Y,AxeMap) || TEST_BIT(AXE_Z,AxeMap) || TEST_BIT(AXE_RX,AxeMap) || TEST_BIT(AXE_RY,AxeMap) || TEST_BIT(AXE_RZ,AxeMap))
+					{
+						double x=0,y=0,z=0,rx=0,ry=0,rz=0;
+						if (periph->GetAxes())
+						{
+							if (TEST_BIT(AXE_X,periph->GetAxes()->AxeMap)) x=periph->GetAxes()->AxeValues[AXE_X].GetValue();
+							if (TEST_BIT(AXE_Y,periph->GetAxes()->AxeMap)) y=periph->GetAxes()->AxeValues[AXE_Y].GetValue();
+							if (TEST_BIT(AXE_Z,periph->GetAxes()->AxeMap)) z=periph->GetAxes()->AxeValues[AXE_Z].GetValue();
+							if (TEST_BIT(AXE_RX,periph->GetAxes()->AxeMap)) rx=periph->GetAxes()->AxeValues[AXE_RX].GetValue();
+							if (TEST_BIT(AXE_RY,periph->GetAxes()->AxeMap)) ry=periph->GetAxes()->AxeValues[AXE_RY].GetValue();
+							if (TEST_BIT(AXE_RZ,periph->GetAxes()->AxeMap)) rz=periph->GetAxes()->AxeValues[AXE_RZ].GetValue();
+						}
+
+						OpenUtility::MutexUnlock(_mutexEnd);
+						On6axisChange(id,x,y,z,rx,ry,rz);
+						OpenUtility::MutexLock(_mutexEnd);
+
+						UNSET_BIT(AXE_X,AxeMap);
+						UNSET_BIT(AXE_Y,AxeMap);
+						UNSET_BIT(AXE_Z,AxeMap);
+						UNSET_BIT(AXE_RX,AxeMap);
+						UNSET_BIT(AXE_RY,AxeMap);
+						UNSET_BIT(AXE_RZ,AxeMap);
+					}
+					break;
+
+				default:
+					break;
+				}
+				for (unsigned int j=0;j<AXE_UNKNOWN;j++)
+				{
+					if (TEST_BIT(j,AxeMap))
+					{
+						switch(j)
+						{
+						case AXE_WHEEL:
+							UNSET_BIT(AXE_HWHEEL,AxeMap);
+						case AXE_HWHEEL:
+							{
+								double x=0,y=0;
+								if (periph->GetAxes())
+								{
+									if (TEST_BIT(AXE_WHEEL,periph->GetAxes()->AxeMap)) x=periph->GetAxes()->AxeValues[AXE_WHEEL].GetValue();
+									if (TEST_BIT(AXE_HWHEEL,periph->GetAxes()->AxeMap)) y=periph->GetAxes()->AxeValues[AXE_HWHEEL].GetValue();
+
+									OpenUtility::MutexUnlock(_mutexEnd);
+									OnWheelChange(id,x,y);
+									OpenUtility::MutexLock(_mutexEnd);
+								}
+							}
+							break;
+
+						case AXE_HAT0X:
+						case AXE_HAT1X:
+						case AXE_HAT2X:
+						case AXE_HAT3X:
+							UNSET_BIT(j+1,AxeMap);
+						case AXE_HAT0Y:
+						case AXE_HAT1Y:
+						case AXE_HAT2Y:
+						case AXE_HAT3Y:
+							{
+								double x=0,y=0;
+								if (periph->GetAxes())
+								{
+									if (TEST_BIT((j-AXE_HAT0X)/2*2+AXE_HAT0X,periph->GetAxes()->AxeMap)) x=periph->GetAxes()->AxeValues[(j-AXE_HAT0X)/2*2+AXE_HAT0X].GetValue();
+									if (TEST_BIT((j-AXE_HAT0X)/2*2+AXE_HAT0X+1,periph->GetAxes()->AxeMap)) y=periph->GetAxes()->AxeValues[(j-AXE_HAT0X)/2*2+AXE_HAT0X+1].GetValue();
+
+									OpenUtility::MutexUnlock(_mutexEnd);
+									OnHatChange(id,(j-AXE_HAT0X)/2,x,y);
+									OpenUtility::MutexLock(_mutexEnd);
+								}
+							}
+							break;
+
+						case AXE_TILT_X:
+							UNSET_BIT(AXE_TILT_Y,AxeMap);
+						case AXE_TILT_Y:
+							{
+								double x=0,y=0;
+								if (periph->GetAxes())
+								{
+									if (TEST_BIT(AXE_TILT_X,periph->GetAxes()->AxeMap)) x=periph->GetAxes()->AxeValues[AXE_TILT_X].GetValue();
+									if (TEST_BIT(AXE_TILT_Y,periph->GetAxes()->AxeMap)) y=periph->GetAxes()->AxeValues[AXE_TILT_Y].GetValue();
+
+									OpenUtility::MutexUnlock(_mutexEnd);
+									OnTiltChange(id,x,y);
+									OpenUtility::MutexLock(_mutexEnd);
+								}
+							}
+							break;
+
+						default:
+							{
+								double val=0;
+								if (TEST_BIT(j,periph->GetAxes()->AxeMap)) val=periph->GetAxes()->AxeValues[j].GetValue();
+
+								OpenUtility::MutexUnlock(_mutexEnd);
+								OnAxeChange(id,GetAxeFromInt(j),val);
+								OpenUtility::MutexLock(_mutexEnd);
+							}
+						}
 					}
 				}
-				_SynMouseBt.DeleteAll();
 			}
 			break;
 
 		case EV_KEY:
-			if ((ev[i].code<BTN_MOUSE) || (ev[i].code>=KEY_OK))
-			{
-				evt.type=ev[i].value;
-				evt.code=ev[i].code;
-				_SynKey.Add(evt);
-			}
-			else if ((ev[i].code>=BTN_MOUSE) && (ev[i].code<BTN_JOYSTICK))
-			{
-				evt.type=ev[i].value;
-				evt.code=ev[i].code-BTN_MOUSE;
-				_SynMouseBt.Add(evt);
-			}
+			if (!periph->HasKeys()) break;
+			periph->SetNewEvent(ev[i].value,ev[i].code,EETkey);
 			break;
 
 		case EV_REL:
-			_SynMouse.SetAxeChange(ev[i].code,ev[i].value);
+			if (!periph->HasAxes()) break;
+			periph->SetNewEvent(ev[i].code,ev[i].value,EETrel);
 			break;
 
 		case EV_ABS:
-std::cout<<"Absolute"<<std::endl;
+			if (!periph->HasAxes()) break;
+			periph->SetNewEvent(ev[i].code,ev[i].value,EETabs);
 			break;
 
 		case EV_MSC:
@@ -444,12 +621,10 @@ std::cout<<"Absolute"<<std::endl;
 
 void GlWindow::CloseEvents()
 {
-	std::cout << "CloseEvents" << std::endl;
 	OpenUtility::MutexLock(_mutexEnd);
 
-	for (unsigned int i=0;i<_fdEvents.GetSize();i++)
-		close(_fdEvents[i]);
-	_fdEvents.DeleteAll();
+	ListPeriph.DeleteAll();
+	SPeripheral::InitPeripheral();
 	write(_fdEnd[OUT],"",1);
 
 	OpenUtility::MutexUnlock(_mutexEnd);
@@ -476,45 +651,453 @@ void GlWindow::MainLoop()
 	_CloseWindow();
 }
 
-template<class T,int N>
-void GlWindow::SEventAxe<T,N>::Init()
+void GlWindow::SetAxeLimit(unsigned int id,EPeriphAxe axe,int min,int max)
 {
-	bzero(bAxe,N*sizeof(bool));
-	bzero(Axe,N*sizeof(T));
-	_changed=false;
+	SPeripheral *periph;
+
+	OpenUtility::MutexLock(_mutexEnd);
+	if ((periph=SPeripheral::GetPeripheral(id))!=NULL)
+	{
+		if (periph->GetAxes() && TEST_BIT(axe,periph->GetAxes()->AxeMap))
+			periph->GetAxes()->AxeValues[axe].SetMargin(min,max);
+	}
+	OpenUtility::MutexUnlock(_mutexEnd);
 }
 
-template<class T,int N>
-void GlWindow::SEventAxe<T,N>::SetAxeChange(int axe,T val)
+void GlWindow::SetAxeRemap(unsigned int id,EPeriphAxe axe,int min,int max)
 {
-	if (axe>N-1) return;
-	if (bAxe[axe]) Axe[axe]+=val;
+	SPeripheral *periph;
+
+	OpenUtility::MutexLock(_mutexEnd);
+	if ((periph=SPeripheral::GetPeripheral(id))!=NULL)
+	{
+		if (periph->GetAxes() && TEST_BIT(axe,periph->GetAxes()->AxeMap))
+			periph->GetAxes()->AxeValues[axe].SetRemap(min,max);
+	}
+	OpenUtility::MutexUnlock(_mutexEnd);
+}
+
+void GlWindow::UnsetAxeRemap(unsigned int id,EPeriphAxe axe)
+{
+	SPeripheral *periph;
+
+	OpenUtility::MutexLock(_mutexEnd);
+	if ((periph=SPeripheral::GetPeripheral(id))!=NULL)
+	{
+		if (periph->GetAxes() && TEST_BIT(axe,periph->GetAxes()->AxeMap))
+			periph->GetAxes()->AxeValues[axe].UnsetRemap();
+	}
+	OpenUtility::MutexUnlock(_mutexEnd);
+}
+
+void GlWindow::SetMousePos(unsigned int id,int x,int y)
+{
+	SPeripheral *periph;
+
+	OpenUtility::MutexLock(_mutexEnd);
+	if ((periph=SPeripheral::GetPeripheral(id))!=NULL)
+	{
+		if (periph->GetAxes())
+		{
+			if (TEST_BIT(AXE_X,periph->GetAxes()->AxeMap))
+				periph->GetAxes()->AxeValues[AXE_X].SetValue(x);
+			if (TEST_BIT(AXE_Y,periph->GetAxes()->AxeMap))
+				periph->GetAxes()->AxeValues[AXE_Y].SetValue(y);
+		}
+	}
+	OpenUtility::MutexUnlock(_mutexEnd);
+}
+
+void GlWindow::Set6AxisPos(unsigned int id,int x,int y,int z,int rx,int ry,int rz)
+{
+	SPeripheral *periph;
+
+	OpenUtility::MutexLock(_mutexEnd);
+	if ((periph=SPeripheral::GetPeripheral(id))!=NULL)
+	{
+		if (periph->GetAxes())
+		{
+			if (TEST_BIT(AXE_X,periph->GetAxes()->AxeMap))
+				periph->GetAxes()->AxeValues[AXE_X].SetValue(x);
+			if (TEST_BIT(AXE_Y,periph->GetAxes()->AxeMap))
+				periph->GetAxes()->AxeValues[AXE_Y].SetValue(y);
+			if (TEST_BIT(AXE_Z,periph->GetAxes()->AxeMap))
+				periph->GetAxes()->AxeValues[AXE_Z].SetValue(z);
+			if (TEST_BIT(AXE_RX,periph->GetAxes()->AxeMap))
+				periph->GetAxes()->AxeValues[AXE_RX].SetValue(rx);
+			if (TEST_BIT(AXE_RY,periph->GetAxes()->AxeMap))
+				periph->GetAxes()->AxeValues[AXE_RY].SetValue(ry);
+			if (TEST_BIT(AXE_RZ,periph->GetAxes()->AxeMap))
+				periph->GetAxes()->AxeValues[AXE_RZ].SetValue(ry);
+		}
+	}
+	OpenUtility::MutexUnlock(_mutexEnd);
+}
+
+void GlWindow::SetMouseLimitToScreen(unsigned int id,bool enable)
+{
+	OpenUtility::MutexLock(_mutexEnd);
+	SetAxeLimit(id,AXE_X,0,ScrWidth);
+	SetAxeLimit(id,AXE_Y,0,ScrHeight);
+	OpenUtility::MutexUnlock(_mutexEnd);
+}
+
+const char* GlWindow::GetPeripheralTypeName(EPeriphType type)
+{
+	switch(type)
+	{
+	case EPTkeyboard:return("Keyboard");break;
+	case EPTmouse:return("Mouse");break;
+	case EPTjoystick:return("Joystick/Gamepad");break;
+	case EPT6axis:return("6 axis");break;
+	default:return("Unknown");
+	}
+}
+
+GlWindow::EPeriphAxe GlWindow::GetAxeBit(int bit,bool realAxe)
+{
+	GlWindow::EPeriphAxe val=AXE_UNKNOWN;
+
+	if (realAxe)
+	{
+		switch(bit)
+		{
+		case REL_X:val=AXE_X;break;
+		case REL_Y:val=AXE_Y;break;
+		case REL_Z:val=AXE_Z;break;
+		case REL_RX:val=AXE_RX;break;
+		case REL_RY:val=AXE_RY;break;
+		case REL_RZ:val=AXE_RZ;break;
+		case REL_HWHEEL:val=AXE_HWHEEL;break;
+		case REL_DIAL:val=AXE_DIAL;break;
+		case REL_WHEEL:val=AXE_WHEEL;break;
+		case REL_MISC:val=AXE_MISC;break;
+		}
+	}
 	else
 	{
-		bAxe[axe]=true;
-		Axe[axe]=val;
+		switch(bit)
+		{
+		case ABS_X:val=AXE_X;break;
+		case ABS_Y:val=AXE_Y;break;
+		case ABS_Z:val=AXE_Z;break;
+		case ABS_RX:val=AXE_RX;break;
+		case ABS_RY:val=AXE_RY;break;
+		case ABS_RZ:val=AXE_RZ;break;
+		case ABS_THROTTLE:val=AXE_THROTTLE;break;
+		case ABS_RUDDER:val=AXE_RUDDER;break;
+		case ABS_WHEEL:val=AXE_WHEEL;break;
+		case ABS_GAS:val=AXE_GAS;break;
+		case ABS_BRAKE:val=AXE_BRAKE;break;
+		case ABS_HAT0X:val=AXE_HAT0X;break;
+		case ABS_HAT0Y:val=AXE_HAT0Y;break;
+		case ABS_HAT1X:val=AXE_HAT1X;break;
+		case ABS_HAT1Y:val=AXE_HAT1Y;break;
+		case ABS_HAT2X:val=AXE_HAT2X;break;
+		case ABS_HAT2Y:val=AXE_HAT2Y;break;
+		case ABS_HAT3X:val=AXE_HAT3X;break;
+		case ABS_HAT3Y:val=AXE_HAT3Y;break;
+		case ABS_PRESSURE:val=AXE_PRESSURE;break;
+		case ABS_DISTANCE:val=AXE_DISTANCE;break;
+		case ABS_TILT_X:val=AXE_TILT_X;break;
+		case ABS_TILT_Y:val=AXE_TILT_Y;break;
+		case ABS_TOOL_WIDTH:val=AXE_TOOL_WIDTH;break;
+		case ABS_VOLUME:val=AXE_VOLUME;break;
+		case ABS_MISC:val=AXE_MISC;break;
+		}
 	}
-	_changed=true;
+	return(val);
 }
 
-template<class T,int N>
-void GlWindow::SEventAxe<T,N>::SetAxe(T _axe[N],bool relative)
+GlWindow::EPeriphAxe GlWindow::GetAxeFromInt(int val)
 {
-	for (int i=0;i<N;i++)
+	switch(val)
 	{
-		if (bAxe[i])
+	case AXE_X:return(AXE_X);
+	case AXE_Y:return(AXE_Y);
+	case AXE_Z:return(AXE_Z);
+	case AXE_RX:return(AXE_RX);
+	case AXE_RY:return(AXE_RY);
+	case AXE_RZ:return(AXE_RZ);
+	case AXE_WHEEL:return(AXE_WHEEL);
+	case AXE_HWHEEL:return(AXE_HWHEEL);
+	case AXE_DIAL:return(AXE_DIAL);
+	case AXE_THROTTLE:return(AXE_THROTTLE);
+	case AXE_RUDDER:return(AXE_RUDDER);
+	case AXE_GAS:return(AXE_GAS);
+	case AXE_BRAKE:return(AXE_BRAKE);
+	case AXE_HAT0X:return(AXE_HAT0X);
+	case AXE_HAT0Y:return(AXE_HAT0Y);
+	case AXE_HAT1X:return(AXE_HAT1X);
+	case AXE_HAT1Y:return(AXE_HAT1Y);
+	case AXE_HAT2X:return(AXE_HAT2X);
+	case AXE_HAT2Y:return(AXE_HAT2Y);
+	case AXE_HAT3X:return(AXE_HAT3X);
+	case AXE_HAT3Y:return(AXE_HAT3Y);
+	case AXE_PRESSURE:return(AXE_PRESSURE);
+	case AXE_DISTANCE:return(AXE_DISTANCE);
+	case AXE_TILT_X:return(AXE_TILT_X);
+	case AXE_TILT_Y:return(AXE_TILT_Y);
+	case AXE_TOOL_WIDTH:return(AXE_TOOL_WIDTH);
+	case AXE_VOLUME:return(AXE_VOLUME);
+	case AXE_MISC:return(AXE_MISC);
+	default:return(AXE_UNKNOWN);
+	}
+}
+
+const char* GlWindow::GetAxeName(GlWindow::EPeriphAxe axe)
+{
+	switch(axe)
+	{
+	case AXE_X:return("X");
+	case AXE_Y:return("Y");
+	case AXE_Z:return("Z");
+	case AXE_RX:return("RX");
+	case AXE_RY:return("RY");
+	case AXE_RZ:return("RZ");
+	case AXE_WHEEL:return("WHEEL");
+	case AXE_HWHEEL:return("HWHEEL");
+	case AXE_DIAL:return("DIAL");
+	case AXE_THROTTLE:return("THROTTLE");
+	case AXE_RUDDER:return("RUDDER");
+	case AXE_GAS:return("GAS");
+	case AXE_BRAKE:return("BRAKE");
+	case AXE_HAT0X:return("HAT0X");
+	case AXE_HAT0Y:return("HAT0Y");
+	case AXE_HAT1X:return("HAT1X");
+	case AXE_HAT1Y:return("HAT1Y");
+	case AXE_HAT2X:return("HAT2X");
+	case AXE_HAT2Y:return("HAT2Y");
+	case AXE_HAT3X:return("HAT3X");
+	case AXE_HAT3Y:return("HAT3Y");
+	case AXE_PRESSURE:return("PRESSURE");
+	case AXE_DISTANCE:return("DISTANCE");
+	case AXE_TILT_X:return("TILT_X");
+	case AXE_TILT_Y:return("TILT_Y");
+	case AXE_TOOL_WIDTH:return("TOOL_WIDTH");
+	case AXE_VOLUME:return("VOLUME");
+	case AXE_MISC:return("MISC");
+	default:return("UNKNOWN");
+	}
+}
+
+// ----- SPeripheral
+// -------------------------------------
+
+OpenUtility::CTable<unsigned int> GlWindow::SPeripheral::_IdFreePeriph(5);
+OpenUtility::CTable<GlWindow::SPeripheral*> GlWindow::SPeripheral::_TabPeriph(5);
+
+void GlWindow::SPeripheral::InitPeripheral()
+{
+	_IdFreePeriph.DeleteAll();
+	_TabPeriph.DeleteAll();
+}
+
+GlWindow::SPeripheral* GlWindow::SPeripheral::GenPeripheral(int fd)
+{
+	char name[256]="Unknown";
+
+	if (ioctl(fd,EVIOCGNAME(sizeof(name)),name)<0)
+	{
+		close(fd);
+		return(NULL);
+	}
+
+	SPeripheral *periph=new SPeripheral(fd,name);
+	if (_IdFreePeriph.GetSize())
+	{
+		periph->id=_IdFreePeriph[_IdFreePeriph.GetSize()-1];
+		_TabPeriph[periph->id]=periph;
+		_IdFreePeriph.Delete(1);
+	}
+	else
+	{
+		periph->id=_TabPeriph.GetSize();
+		_TabPeriph.Add(periph);
+	}
+
+	return(periph);
+}
+
+GlWindow::SPeripheral* GlWindow::SPeripheral::GetPeripheral(unsigned int id)
+{
+	if (_TabPeriph.GetSize()<id) return(_TabPeriph[id]);
+	return(NULL);
+}
+
+GlWindow::SPeripheral::SPeripheral(int fd,const char *name) :
+	fdEvent(fd)
+	,Type(EPTunknown)
+	,sKey(NULL)
+	,sAxe(NULL)
+{
+	long bitmask[NLONGS(EV_CNT)];
+	long bit;
+
+	strcpy(Name,name);
+
+	memset(bitmask,0,sizeof(bitmask));
+	if (ioctl(fd,EVIOCGBIT(0,sizeof(bitmask)),bitmask)<0) return;
+
+	for (bit=0;bit<KEY_CNT;bit++)
+	{
+		if (TEST_BIT(bit,bitmask))
 		{
-			if (relative) _axe[i]+=Axe[i];
-			else _axe[i]=Axe[i];
+			switch (bit)
+			{
+			case EV_KEY:
+				{
+					long keymask[NLONGS(KEY_CNT)];
+					long bitK;
+					int codes[2];
+					int keybNb;
+
+					keybNb=0;
+					sKey=new SKey();
+					if (ioctl(fd,EVIOCGBIT(EV_KEY,sizeof(keymask)),keymask)<0) break;
+					for (bitK=0;bitK<KEY_CNT;bitK++)
+					{
+						if (TEST_BIT(bitK,keymask))
+						{
+							// Try to detect peripheral type
+							if (Type==EPTunknown)
+							{
+								if ((bitK>=KEY_1) && (bitK<=KEY_CAPSLOCK))
+								{
+									keybNb++;
+									if (keybNb>5) Type=EPTkeyboard;
+								}
+								else if (bitK==BTN_MOUSE) Type=EPTmouse;
+								else if ((bitK==BTN_GAMEPAD) || (bitK==BTN_JOYSTICK)) Type=EPTjoystick;
+							}
+
+							// Try to get corresponding keycode
+							codes[0]=bitK;
+							if (ioctl(fd,EVIOCGKEYCODE,codes)<0) sKey->KeyMap[bitK]=bitK;
+							else sKey->KeyMap[codes[0]]=codes[1];
+						}
+					}
+				}
+				break;
+
+			case EV_REL:
+				{
+					long bitK;
+					long axemask[NLONGS(REL_CNT)];
+
+					if (!sAxe) sAxe=new SAxe();
+					if (ioctl(fd,EVIOCGBIT(EV_REL,sizeof(axemask)),axemask)<0) break;
+					for (bitK=0;bitK<REL_CNT;bitK++)
+					{
+						if (TEST_BIT(bitK,axemask))
+						{
+							EPeriphAxe axe;
+							if (AXE_UNKNOWN!=(axe=GetAxeBit(bitK,true)))
+							{
+								SET_BIT(axe,sAxe->AxeMap);
+							}
+						}
+					}
+					if (Type==EPTunknown)
+					{
+						if (TEST_BIT(AXE_X,sAxe->AxeMap) &&
+							TEST_BIT(AXE_Y,sAxe->AxeMap) &&
+							TEST_BIT(AXE_Z,sAxe->AxeMap) &&
+							TEST_BIT(AXE_RX,sAxe->AxeMap) &&
+							TEST_BIT(AXE_RY,sAxe->AxeMap) &&
+							TEST_BIT(AXE_RZ,sAxe->AxeMap)) Type=EPT6axis;
+					}
+				}
+				break;
+
+			case EV_ABS:
+				{
+					long bitK;
+					long axemask[NLONGS(ABS_CNT)];
+					struct input_absinfo abs_feat;
+
+					if (!sAxe) sAxe=new SAxe();
+					if (ioctl(fd,EVIOCGBIT(EV_ABS,sizeof(axemask)),axemask)<0) break;
+					for (bitK=0;bitK<ABS_CNT;bitK++)
+					{
+						if (TEST_BIT(bitK,axemask))
+						{
+							EPeriphAxe axe;
+							if (AXE_UNKNOWN!=(axe=GetAxeBit(bitK,false)))
+							{
+								SET_BIT(axe,sAxe->AxeMap);
+								if (ioctl(fd,EVIOCGABS(bitK),&abs_feat)>=0)
+								{
+									sAxe->AxeValues[axe].SetMargin(abs_feat.minimum,abs_feat.maximum);
+									sAxe->AxeValues[axe].SetValue(abs_feat.value);
+								}
+							}
+						}
+					}
+					if (Type==EPTunknown)
+					{
+						if (TEST_BIT(AXE_X,sAxe->AxeMap) &&
+							TEST_BIT(AXE_Y,sAxe->AxeMap) &&
+							TEST_BIT(AXE_Z,sAxe->AxeMap) &&
+							TEST_BIT(AXE_RX,sAxe->AxeMap) &&
+							TEST_BIT(AXE_RY,sAxe->AxeMap) &&
+							TEST_BIT(AXE_RZ,sAxe->AxeMap)) Type=EPT6axis;
+					}
+					break;
+				}
+			}
 		}
 	}
 }
 
-void GlWindow::SetMousePos(int x,int y,int z)
+void GlWindow::SPeripheral::SetNewEvent(int type,int value,EEventType etype)
 {
-	OpenUtility::MutexLock(_mutexMouse);
-	MouseAxes[0]=x;
-	MouseAxes[1]=y;
-	MouseAxes[2]=z;
-	OpenUtility::MutexUnlock(_mutexMouse);
+	SEventValue evt;
+
+	switch(etype)
+	{
+	case EETkey:
+		if (HasKeys())
+		{
+			evt.type=type;
+			evt.value=value;
+			sKey->_SynKey.Add(evt);
+		}
+		break;
+
+	case EETrel:
+	case EETabs:
+		if (HasAxes())
+		{
+			evt.type=type;
+			evt.value=value;
+			evt.data=etype;
+			sAxe->_SynAxe.Add(evt);
+		}
+		break;
+	}
+}
+
+GlWindow::SPeripheral::~SPeripheral()
+{
+	close(fdEvent);
+	_IdFreePeriph.Add(id);
+	_TabPeriph[id]=NULL;
+	delete sKey;
+	delete sAxe;
+}
+
+void GlWindow::SAxeParam::CheckValue()
+{
+	if (min!=max)
+	{
+		if (value<min) value=min;
+		else if (value>max) value=max;
+	}
+}
+
+double GlWindow::SAxeParam::GetValue()
+{
+	if (remap) return((value-min)/(max-min)*(maxR-minR)+minR);
+	return(value);
 }

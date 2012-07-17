@@ -208,6 +208,7 @@ int GetConsoleFd(const char* name)
 void StartClient()
 {
 	bcm_host_init();
+
 	Client client;
 	client.Start();
 }

@@ -31,7 +31,7 @@ void Client::PreRender()
 	curTime=DiffTime(_debTime,curTime);
 	if (curTime.tv_sec>10)
 	{
-		CloseWindow();
+//		CloseWindow();
 	}
 }
 
@@ -54,27 +54,94 @@ timespec Client::DiffTime(timespec start,timespec end)
 	return temp;
 }
 
-void Client::OnKeyDown(int keyCode)
+void Client::OnKeyDown(unsigned int id,int keyCode)
 {
-	std::cout << "Press : " << keyCode << std::endl;
+	std::cout << "Press (id #" << id << ") : " << keyCode << std::endl;
+	if (keyCode==KEY_Q)
+		CloseWindow();
 }
 
-void Client::OnKeyUp(int keyCode)
+void Client::OnPeripheralAdd(unsigned int id,const char *name,EPeriphType type)
 {
-	std::cout << "Release : " << keyCode << std::endl;
+	std::cout << "Nouveau périphérique (id=" << id << " type=" << GlWindow::GetPeripheralTypeName(type) << ") : " << name << std::endl;
 }
 
-void Client::OnMouseButtonDown(int id,int x,int y,int z)
+void Client::OnPeripheralRemove(unsigned int id,const char *name)
 {
-	std::cout << "Mouse btn #" << id << " pressed : x=" << x << " ; y=" << y << " ; z=" << z  << std::endl;
+	std::cout << "Déconnexion de (id=" << id << ") : " << name << std::endl;
 }
 
-void Client::OnMouseButtonUp(int id,int x,int y,int z)
+void Client::OnMouseMove(unsigned int id,double x,double y)
 {
-	std::cout << "Mouse btn #" << id << " unpressed : x=" << x << " ; y=" << y << " ; z=" << z  << std::endl;
+	std::cout << "Mouse (id #" << id << ") move : x=" << x << " ; y=" << y << std::endl;
 }
 
-void Client::OnMouseMove(int x,int y,int z)
+void Client::On6axisChange(unsigned int id,double x,double y,double z,double rx,double ry,double rz)
 {
-	std::cout << "Mouse move : x=" << x << " ; y=" << y << " ; z=" << z << std::endl;
+	std::cout << "6axis (id #" << id << ") move : x=" << x << " ; y=" << y << " ; z=" << z << " ; rx=" << rx << " ; ry=" << ry << " ; rz=" << rz << std::endl;
+}
+
+void Client::OnWheelChange(unsigned int id,double x,double y)
+{
+	std::cout << "Wheel (id #" << id << ") : x=" << x << " ; y=" << y << std::endl;
+}
+
+void Client::OnHatChange(unsigned int id,int sub,double x,double y)
+{
+	std::cout << "Hat (id #" << id << ") ID #" << sub << " : x=" << x << " ; y=" << y << std::endl;
+}
+
+void Client::OnTiltChange(unsigned int id,double x,double y)
+{
+	std::cout << "Tilt (id #" << id << ") : x=" << x << " ; y=" << y << std::endl;
+}
+
+void Client::OnAxeChange(unsigned int id,GlWindow::EPeriphAxe axe,double val)
+{
+	std::cout << "Axe (id #" << id << ") axe " << GlWindow::GetAxeName(axe) << " : val=" << val << std::endl;
+}
+
+void Client::OnKeyUp(unsigned int id,int keyCode)
+{
+	std::cout << "Release (id #" << id << ") : " << keyCode << std::endl;
+}
+
+void Client::OnMouseButtonDown(unsigned int id,int b,double x,double y)
+{
+	std::cout << "Mouse (id #" << id << ") btn #" << b << " pressed : x=" << x << " ; y=" << y << std::endl;
+}
+
+void Client::OnMouseButtonUp(unsigned int id,int b,double x,double y)
+{
+	std::cout << "Mouse (id #" << id << ") btn #" << b << " unpressed : x=" << x << " ; y=" << y << std::endl;
+}
+
+void Client::OnButtonDown(unsigned int id,int b)
+{
+	std::cout << "Button (id #" << id << ") btn #" << b << " pressed" << std::endl;
+}
+
+void Client::OnButtonUp(unsigned int id,int b)
+{
+	std::cout << "Button (id #" << id << ") btn #" << b << " unpressed" << std::endl;
+}
+
+void Client::OnJoystickButtonDown(unsigned int id,int b)
+{
+	std::cout << "Joystick (id #" << id << ") btn #" << b << " pressed" << std::endl;
+}
+
+void Client::OnJoystickButtonUp(unsigned int id,int b)
+{
+	std::cout << "Joystick (id #" << id << ") btn #" << b << " unpressed" << std::endl;
+}
+
+void Client::OnGamepadButtonDown(unsigned int id,int b)
+{
+	std::cout << "Gamepad (id #" << id << ") btn #" << b << " pressed" << std::endl;
+}
+
+void Client::OnGamepadButtonUp(unsigned int id,int b)
+{
+	std::cout << "Gamepad (id #" << id << ") btn #" << b << " unpressed" << std::endl;
 }

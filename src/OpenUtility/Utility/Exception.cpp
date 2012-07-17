@@ -31,11 +31,11 @@ Modules internes: */
 --- Entree: néant															---
 --- Sortie: néant															---
 -----------------------------------------------------------------------------*/
-OpenUtility::CMyException::CMyException()
+OpenUtility::CMyException::CMyException(const char *file,int line,const char *func) :
+	File(file),Line(line),Func(Func)
 {
- valeur=NO_ERREUR;
- type=NO_ERREUR;
- // l'objet est initialisé
+	valeur=NO_ERREUR;
+	type=NOT_DEFINE;
 }
 
 /*-----------------------------------------------------------------------------
@@ -47,7 +47,8 @@ OpenUtility::CMyException::CMyException()
 --- Entree: valeur du champ valeur											---
 --- Sortie: néant															---
 -----------------------------------------------------------------------------*/
-OpenUtility::CMyException::CMyException(unsigned int Nvaleur)
+OpenUtility::CMyException::CMyException(const char *file,int line,const char *func,unsigned int Nvaleur) :
+	File(file),Line(line),Func(Func)
 {
 	valeur=Nvaleur;
 	type=NOT_DEFINE;
@@ -62,7 +63,8 @@ OpenUtility::CMyException::CMyException(unsigned int Nvaleur)
 --- Entree: valeur du champ valeur, valeur du champ type					---
 --- Sortie: néant															---
 -----------------------------------------------------------------------------*/
-OpenUtility::CMyException::CMyException(unsigned int Nvaleur,unsigned int Ntype)
+OpenUtility::CMyException::CMyException(const char *file,int line,const char *func,unsigned int Nvaleur,unsigned int Ntype) :
+	File(file),Line(line),Func(Func)
 {
 	valeur=Nvaleur;
 	type=Ntype;

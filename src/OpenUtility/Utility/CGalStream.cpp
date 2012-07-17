@@ -84,7 +84,7 @@ int OpenUtility::CGalStream::FindString(char *Str,int Start,int End)
 
 	if ((Str==NULL) || (End>(int)taille) || (Start>End) || (Start<0))
 	{
-		CMyException E(ERR_ARGUMENT,12);
+		GetCMyExceptionObj(E,ERR_ARGUMENT);
 		throw(E);
 	}
 
@@ -152,7 +152,7 @@ int OpenUtility::CGalStream::NbCharFormat(const char *StrFormat,va_list argList)
 		}
 		if (nWidth<0)
 		{
-			CMyException E(ERR_PRGM);
+			GetCMyExceptionObj(E,ERR_PRGM);
 			throw(E);
 		}
 
@@ -175,7 +175,7 @@ int OpenUtility::CGalStream::NbCharFormat(const char *StrFormat,va_list argList)
 			}
 			if (nPrecision<0)
 			{
-				CMyException E(ERR_PRGM);
+				GetCMyExceptionObj(E,ERR_PRGM);
 				throw(E);
 			}
 		}
@@ -291,7 +291,7 @@ int OpenUtility::CGalStream::NbCharFormat(const char *StrFormat,va_list argList)
 				break;
 
 			default:	// unknown formatting option
-				CMyException E(ERR_PRGM);
+				GetCMyExceptionObj(E,ERR_PRGM);
 				throw(E);
 			}
 		}

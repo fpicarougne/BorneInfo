@@ -9,7 +9,7 @@ void* OpenUtility::MyMalloc(int Size)
 
 	if (NULL==(temp=malloc(Size)))
 	{
-		OpenUtility::CMyException E(ERR_MEMOIRE);
+		OpenUtility::GetCMyExceptionObj(E,ERR_MEMOIRE);
 		throw(E);
 	}
 	return(temp);
@@ -21,7 +21,7 @@ void* OpenUtility::MyCalloc(size_t num,size_t size)
 
 	if (NULL==(temp=calloc(num,size)))
 	{
-		OpenUtility::CMyException E(ERR_MEMOIRE);
+		OpenUtility::GetCMyExceptionObj(E,ERR_MEMOIRE);
 		throw(E);
 	}
 	return(temp);
@@ -33,7 +33,7 @@ void* OpenUtility::MyRealloc(void *Ptr,int Size)
 
 	if (NULL==(temp=realloc(Ptr,Size)))
 	{
-		OpenUtility::CMyException E(ERR_MEMOIRE);
+		OpenUtility::GetCMyExceptionObj(E,ERR_MEMOIRE);
 		throw(E);
 	}
 
@@ -50,7 +50,7 @@ char* OpenUtility::MyStrdup(const char *strSource)
 	if (NULL==(temp=strdup(strSource)))
 #endif
 	{
-		OpenUtility::CMyException E(ERR_MEMOIRE);
+		OpenUtility::GetCMyExceptionObj(E,ERR_MEMOIRE);
 		throw(E);
 	}
 

@@ -410,7 +410,7 @@ void OpenUtility::CBlockStream::Format(const char *StrFormat,...)
 
 	if ((RealLen=vsprintf(Stream,StrFormat,marker))>(int)taille)
 	{
-		CMyException E(ERR_PRGM);
+		GetCMyExceptionObj(E,ERR_PRGM);
 		throw(E);
 	}
 	taille=RealLen;
@@ -428,7 +428,7 @@ void OpenUtility::CBlockStream::VFormat(const char *StrFormat,va_list argList)
 
 	if ((RealLen=vsprintf(Stream,StrFormat,argList))>(int)taille)
 	{
-		CMyException E(ERR_PRGM);
+		GetCMyExceptionObj(E,ERR_PRGM);
 		throw(E);
 	}
 	taille=RealLen;
@@ -447,7 +447,7 @@ void OpenUtility::CBlockStream::AddFormatStream(const char *StrFormat,...)
 
 	if ((RealLen=vsprintf(&Stream[taille],StrFormat,marker))>(int)tailletemp)
 	{
-		CMyException E(ERR_PRGM);
+		GetCMyExceptionObj(E,ERR_PRGM);
 		throw(E);
 	}
 	taille+=RealLen;
@@ -465,7 +465,7 @@ void OpenUtility::CBlockStream::AddVFormatStream(const char *StrFormat,va_list a
 
 	if ((RealLen=vsprintf(&Stream[taille],StrFormat,argList))>(int)tailletemp)
 	{
-		CMyException E(ERR_PRGM);
+		GetCMyExceptionObj(E,ERR_PRGM);
 		throw(E);
 	}
 	taille+=RealLen;

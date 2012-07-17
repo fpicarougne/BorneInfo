@@ -50,7 +50,7 @@ template <class T> void OpenUtility::CTable<T>::Delete(unsigned int nb)
 {
 	if (nb>Taille)
 	{
-		CMyException E(ERR_ARGUMENT,25);
+		GetCMyExceptionObj(E,ERR_ARGUMENT);
 		throw(E);
 	}
 
@@ -76,7 +76,7 @@ template <class T> T OpenUtility::CTable<T>::GetAt(unsigned int index) const
 {
 	if (index>=Taille)
 	{
-		CMyException E(ERR_ARGUMENT,26);
+		GetCMyExceptionObj(E,ERR_ARGUMENT);
 		throw(E);
 	}
 
@@ -87,7 +87,7 @@ template <class T> T& OpenUtility::CTable<T>::ElementAt(unsigned int index)
 {
 	if (index>=Taille)
 	{
-		CMyException E(ERR_ARGUMENT,27);
+		GetCMyExceptionObj(E,ERR_ARGUMENT);
 		throw(E);
 	}
 

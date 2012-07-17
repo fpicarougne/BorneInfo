@@ -44,7 +44,7 @@ void OpenUtility::MutexUnlock(MUTEX &m)
 #endif
 }
 
-bool DestroyMutex(MUTEX &m)
+bool OpenUtility::DestroyMutex(MUTEX &m)
 {
 #ifdef WIN32
 	#error not done
