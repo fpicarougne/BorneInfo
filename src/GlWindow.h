@@ -98,7 +98,7 @@ private:
 	class SAxeParam
 	{
 	public:
-		SAxeParam(int _min=0,int _max=0) : min(_min),max(_max),remap(false),value(_min) {if (min>max){int t=min;min=max;max=t;}}
+		SAxeParam(int _min=0,int _max=0) : IsSetToZero(false),min(_min),max(_max),remap(false),value(_min) {if (min>max){int t=min;min=max;max=t;}}
 		inline double SetMargin(double _min=0,double _max=0) {min=_min;max=_max;if (min>max){int t=min;min=max;max=t;}return(GetValue());}
 		inline double SetRemap(double _min=0,double _max=1) {remap=true;minR=_min;maxR=_max;if (minR>maxR){int t=minR;minR=maxR;maxR=t;}return(GetValue());}
 		inline void UnsetRemap() {remap=false;}
@@ -108,6 +108,9 @@ private:
 
 	private:
 		void CheckValue();
+
+	public:
+		bool IsSetToZero;
 
 	private:
 		int min;

@@ -602,6 +602,8 @@ void GlWindow::ReadEvent(SPeripheral *periph)
 							}
 						}
 					}
+					if (periph->GetAxes() && TEST_BIT(j,periph->GetAxes()->AxeMap) && periph->GetAxes()->AxeValues[j].IsSetToZero)
+						periph->GetAxes()->AxeValues[j].SetValue(0);
 				}
 			}
 			break;
@@ -1028,14 +1030,19 @@ GlWindow::SPeripheral::SPeripheral(int fd,const char *name,OpenUtility::CListe<O
 							}
 						}
 					}
-					if (Type==EPTunknown)
+					if ((Type==EPTunknown) || (Type==EPTmouse))
 					{
 						if (TEST_BIT(AXE_X,sAxe->AxeMap) &&
 							TEST_BIT(AXE_Y,sAxe->AxeMap) &&
 							TEST_BIT(AXE_Z,sAxe->AxeMap) &&
 							TEST_BIT(AXE_RX,sAxe->AxeMap) &&
 							TEST_BIT(AXE_RY,sAxe->AxeMap) &&
-							TEST_BIT(AXE_RZ,sAxe->AxeMap)) Type=EPT6axis;
+							TEST_BIT(AXE_RZ,sAxe->AxeMap))
+						{
+							for (int axe=AXE_X;axe<=AXE_RZ;axe++)
+								sAxe->AxeValues[axe].IsSetToZero=true;
+							Type=EPT6axis;
+						}
 					}
 				}
 				break;
