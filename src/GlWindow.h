@@ -6,6 +6,7 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <Utility/MultiThread.h>
+#include <Utility/Stream.h>
 #include <iostream>
 #include <Template/CTable.h>
 #include <Template/CListe.h>
@@ -130,7 +131,7 @@ private:
 	{
 	public:
 		static void InitPeripheral();
-		static SPeripheral* GenPeripheral(int fd);
+		static SPeripheral* GenPeripheral(const char *file);
 		static SPeripheral* GetPeripheral(unsigned int id);
 		~SPeripheral();
 		inline unsigned int GetId() {return(id);}
@@ -144,11 +145,13 @@ private:
 		void SetNewEvent(int type,int value,EEventType etype);
 
 	private:
-		SPeripheral(int fd,const char *name);
+		SPeripheral(int fd,const char *name,OpenUtility::CListe<OpenUtility::CStream>::CListeIterator &pos);
 
 	private:
 		static OpenUtility::CTable<unsigned int> _IdFreePeriph;
 		static OpenUtility::CTable<SPeripheral*> _TabPeriph;
+		static OpenUtility::CListe<OpenUtility::CStream> _ListPeriphFile;
+		OpenUtility::CListe<OpenUtility::CStream>::CListeIterator FilePos;
 		int fdEvent;
 		unsigned int id;
 		char Name[256];

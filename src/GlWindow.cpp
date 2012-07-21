@@ -5,7 +5,6 @@
 #include <time.h>
 #include <ctype.h>
 #include <Utility/FileHandling.h>
-#include <Utility/Stream.h>
 #include <sys/types.h>
 #include <sys/time.h> 
 #include <sys/stat.h>
@@ -14,10 +13,12 @@
 #include <poll.h>
 #include <sys/inotify.h>
 #include <limits.h>
+#include <stdlib.h>
 #include "borne.h"
 
 #define check() assert(glGetError()==0)
 
+const char DirEventFile[]="/dev/input/by-path/";
 
 // ----- GlWindow
 // -------------------------------------
@@ -223,13 +224,17 @@ void GlWindow::EventListener()
 		OpenUtility::MutexLock(_mutexEnd);
 
 		while (OpenUtility::GetNextDirFile(dirH,file))
-			AddPeripheral(file.GetStream());
+		{
+			OpenUtility::CStream url("/dev/input/");
+			url+=file;
+			AddPeripheral(url.GetStream());
+		}
 		OpenUtility::ReleaseDirList(dirH);
 
 		unsigned int fdI,wd;
 
 		fdI=inotify_init();
-		wd=inotify_add_watch(fdI,"/dev/input",IN_CREATE);
+		wd=inotify_add_watch(fdI,DirEventFile,IN_CREATE);
 
 		OpenUtility::MutexUnlock(_mutexEnd);
 
@@ -269,10 +274,34 @@ void GlWindow::EventListener()
 				initPoll=false;
 			}
 
+			// Wait for events
 			if (poll(fds,nb+2,-1)<0)
 				break;
 
+			// Check end event
 			if (fds[nb+1].revents & POLLIN) read(_fdEnd[IN],&c,1);
+			for (i=0;i<nb;i++)
+			{
+				// Check remove peripherical
+				if (fds[i].revents & (POLLERR|POLLHUP))
+				{
+					// Disconnection of the device
+					OpenUtility::MutexLock(_mutexEnd);
+					RemovePeripheral(tabPeriph[i]);
+					OpenUtility::MutexUnlock(_mutexEnd);
+
+					initPoll=true;
+				}
+				// Check event
+				else if (fds[i].revents & POLLIN)
+				{
+					OpenUtility::MutexLock(_mutexEnd);
+					if (ListPeriph.GetSize()) ReadEvent(ListPeriph[tabPeriph[i]]);
+					OpenUtility::MutexUnlock(_mutexEnd);
+				}
+			}
+
+			// Check add peripherical (necessarly after removing peripjerical due to recycling event files)
 			if (fds[nb].revents & POLLIN)
 			{
 				rNb=read(fdI,buffer,sizeof(buffer));
@@ -286,30 +315,14 @@ void GlWindow::EventListener()
 						if (event->len)
 						{
 							OpenUtility::MutexLock(_mutexEnd);
-							AddPeripheral(event->name);
+							OpenUtility::CStream url(DirEventFile);
+							url+=event->name;
+							AddPeripheral(url.GetStream());
 							OpenUtility::MutexUnlock(_mutexEnd);
 						}
 						initPoll=true;
 					}
 					ri+=sizeof(struct inotify_event)+event->len;
-				}
-			}
-			for (i=0;i<nb;i++)
-			{
-				if (fds[i].revents & (POLLERR|POLLHUP))
-				{
-					// Disconnection of the device
-					OpenUtility::MutexLock(_mutexEnd);
-					RemovePeripheral(tabPeriph[i]);
-					OpenUtility::MutexUnlock(_mutexEnd);
-
-					initPoll=true;
-				}
-				else if (fds[i].revents & POLLIN)
-				{
-					OpenUtility::MutexLock(_mutexEnd);
-					if (ListPeriph.GetSize()) ReadEvent(ListPeriph[tabPeriph[i]]);
-					OpenUtility::MutexUnlock(_mutexEnd);
 				}
 			}
 		}
@@ -321,24 +334,25 @@ void GlWindow::EventListener()
 
 bool GlWindow::AddPeripheral(char *file)
 {
-	char model[]="event";
-	bool find=false;
+	char model[]="/dev/input/event";
+	char buffer[PATH_MAX+1];
+	bool found;
 	unsigned int i;
 
+	// Get real file (follow links, ...)
+	realpath(file,buffer);
+
+	// Check if file correspond to pattern
 	i=0;
-	while ((!find) && (model[i]!='\0') && (file[i]!='\0') && (model[i]==file[i])) i++;
+	found=false;
+	while ((!found) && (model[i]!='\0') && (buffer[i]!='\0') && (model[i]==buffer[i])) i++;
 	if (model[i]!='\0') return(false);
+	while (isdigit(buffer[i])) i++;
+	if (buffer[i]!='\0') return(false);
 
-	while (isdigit(file[i])) i++;
-	if (file[i]!='\0') return(false);
-
-	OpenUtility::CStream url("/dev/input/");
-	int fd=-1;
-	url+=file;
-	if ((fd=open(url.GetStream(),O_RDONLY))<0) return(false);
-
+	// Generate peripherical
 	SPeripheral *periph;
-	if ((periph=SPeripheral::GenPeripheral(fd))==NULL) return(false);
+	if ((periph=SPeripheral::GenPeripheral(buffer))==NULL) return(false);
 
 	ListPeriph.Add(periph);
 	OnPeripheralAdd(periph->GetId(),periph->GetName(),periph->GetType());
@@ -632,11 +646,6 @@ void GlWindow::CloseEvents()
 
 void GlWindow::MainLoop()
 {
-	struct timespec waitDelay;
-
-	waitDelay.tv_sec=0;
-	waitDelay.tv_nsec=100000000;
-
 	Init();
 	while (!_request_end)
 	{
@@ -886,16 +895,34 @@ const char* GlWindow::GetAxeName(GlWindow::EPeriphAxe axe)
 
 OpenUtility::CTable<unsigned int> GlWindow::SPeripheral::_IdFreePeriph(5);
 OpenUtility::CTable<GlWindow::SPeripheral*> GlWindow::SPeripheral::_TabPeriph(5);
+OpenUtility::CListe<OpenUtility::CStream> GlWindow::SPeripheral::_ListPeriphFile;
 
 void GlWindow::SPeripheral::InitPeripheral()
 {
 	_IdFreePeriph.DeleteAll();
 	_TabPeriph.DeleteAll();
+	_ListPeriphFile.DeleteAll();
 }
 
-GlWindow::SPeripheral* GlWindow::SPeripheral::GenPeripheral(int fd)
+GlWindow::SPeripheral* GlWindow::SPeripheral::GenPeripheral(const char *file)
 {
 	char name[256]="Unknown";
+	bool found;
+	unsigned int i;
+
+	// Check if we have not already load the peripherical
+	found=false;
+	i=0;
+	while (!found && (i<_ListPeriphFile.GetSize()))
+	{
+		if ((*_ListPeriphFile[i])==file) found=true;
+		i++;
+	}
+	if (found) return(NULL);
+
+	// Get informations about the peripherical
+	int fd=-1;
+	if ((fd=open(file,O_RDONLY))<0) return(NULL);
 
 	if (ioctl(fd,EVIOCGNAME(sizeof(name)),name)<0)
 	{
@@ -903,7 +930,9 @@ GlWindow::SPeripheral* GlWindow::SPeripheral::GenPeripheral(int fd)
 		return(NULL);
 	}
 
-	SPeripheral *periph=new SPeripheral(fd,name);
+	OpenUtility::CListe<OpenUtility::CStream>::CListeIterator pos;
+	_ListPeriphFile.Add(new OpenUtility::CStream(file),&pos);
+	SPeripheral *periph=new SPeripheral(fd,name,pos);
 	if (_IdFreePeriph.GetSize())
 	{
 		periph->id=_IdFreePeriph[_IdFreePeriph.GetSize()-1];
@@ -925,8 +954,9 @@ GlWindow::SPeripheral* GlWindow::SPeripheral::GetPeripheral(unsigned int id)
 	return(NULL);
 }
 
-GlWindow::SPeripheral::SPeripheral(int fd,const char *name) :
-	fdEvent(fd)
+GlWindow::SPeripheral::SPeripheral(int fd,const char *name,OpenUtility::CListe<OpenUtility::CStream>::CListeIterator &pos) :
+	FilePos(pos)
+	,fdEvent(fd)
 	,Type(EPTunknown)
 	,sKey(NULL)
 	,sAxe(NULL)
@@ -1081,6 +1111,7 @@ void GlWindow::SPeripheral::SetNewEvent(int type,int value,EEventType etype)
 GlWindow::SPeripheral::~SPeripheral()
 {
 	close(fdEvent);
+	_ListPeriphFile.Delete(FilePos);
 	_IdFreePeriph.Add(id);
 	_TabPeriph[id]=NULL;
 	delete sKey;

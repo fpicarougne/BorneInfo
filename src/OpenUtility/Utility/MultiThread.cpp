@@ -71,13 +71,13 @@ int OpenUtility::WaitSem(SEMAPHORE &sem,int msTimeout)
 	struct timeval now;
 	struct timespec timeout;
 	SemStruct *sema=(SemStruct*)sem;
-	long t;
+//	long t;
 
 	gettimeofday(&now,NULL);
 	timeout.tv_sec=now.tv_sec+msTimeout/1000;
 	timeout.tv_nsec=now.tv_usec*1000+(msTimeout%1000)*1000000;
 	if (timeout.tv_nsec>1000000000) {timeout.tv_nsec%=1000000000;timeout.tv_sec++;}
-	t=now.tv_usec*1000+(msTimeout%1000)*1000000;
+//	t=now.tv_usec*1000+(msTimeout%1000)*1000000;
 //	printf("t=%ld\ntimeout : %d'%ld\n",t,timeout.tv_sec,timeout.tv_nsec);
 //	printf("now     : %d'%ld\n",now.tv_sec,now.tv_usec);
 	pthread_mutex_lock(&sema->mut);
@@ -99,9 +99,6 @@ int OpenUtility::WaitSem(SEMAPHORE &sem,int msTimeout)
 
 bool OpenUtility::SignalSem(SEMAPHORE &sem,int nb)
 {
-	int toto;
-	if (nb!=1)
-		toto=1;
 #ifdef WIN32
 	return(ReleaseSemaphore(sem,nb,NULL)!=0);
 #else
