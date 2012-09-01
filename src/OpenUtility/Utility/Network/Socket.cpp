@@ -1,5 +1,5 @@
 #include "Socket.h"
-#include "Memory.h"
+#include "../Memory.h"
 #ifndef WIN32
 	#include <unistd.h>
 	#include <netdb.h>

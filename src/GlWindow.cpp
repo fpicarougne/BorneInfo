@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <ctype.h>
-#include <Utility/FileHandling.h>
+#include <Utility/Filesystem/FileHandling.h>
 #include <sys/types.h>
 #include <sys/time.h> 
 #include <sys/stat.h>
@@ -15,8 +15,6 @@
 #include <limits.h>
 #include <stdlib.h>
 #include "borne.h"
-
-#define check() assert(glGetError()==0)
 
 const char DirEventFile[]="/dev/input/by-path/";
 
@@ -44,6 +42,42 @@ GlWindow::~GlWindow()
 	ListPeriph.DeleteAll();
 	OpenUtility::DestroyMutex(_mutexMouse);
 	OpenUtility::DestroyMutex(_mutexEnd);
+}
+
+void GlWindow::CheckGl(const char *file,int line)
+{
+	GLenum err;
+
+	if ((err=glGetError())!=GL_NO_ERROR)
+	{
+		OpenUtility::CStream errStr;
+		switch(err)
+		{
+#ifdef GL_INVALID_ENUM
+		case GL_INVALID_ENUM:errStr="Invalid enum";break;
+#endif
+#ifdef GL_INVALID_VALUE
+		case GL_INVALID_VALUE:errStr="Invalid value";break;
+#endif
+#ifdef GL_INVALID_OPERATION
+		case GL_INVALID_OPERATION:errStr="Invalid operation";break;
+#endif
+#ifdef GL_STACK_OVERFLOW
+		case GL_STACK_OVERFLOW:errStr="Stack overflow";break;
+#endif
+#ifdef GL_STACK_UNDERFLOW
+		case GL_STACK_UNDERFLOW:errStr="Stack underflow";break;
+#endif
+#ifdef GL_OUT_OF_MEMORY
+		case GL_OUT_OF_MEMORY:errStr="Out of memory";break;
+#endif
+#ifdef GL_TABLE_TOO_LARGE
+		case GL_TABLE_TOO_LARGE:errStr="Table size exceeded";break;
+#endif
+		default:errStr.Format("Unknow error 0x%08.8X",err);break;
+		}
+		std::cout << "OpenGl error" << std::endl << "\t" << file << " (line " << line << ")" << std::endl << "\t" << errStr << std::endl;
+	}
 }
 
 TH_CALL_BACK(GlWindow,EventListenerCB,pParam)
@@ -74,6 +108,7 @@ bool GlWindow::CreateOpenGlContext()
 		EGL_BLUE_SIZE, 8,
 		EGL_ALPHA_SIZE, 8,
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+		EGL_DEPTH_SIZE, 16,
 		EGL_NONE
 	};
 
@@ -87,27 +122,27 @@ bool GlWindow::CreateOpenGlContext()
 	// get an EGL display connection
 	Display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 	assert(Display!=EGL_NO_DISPLAY);
-	check();
+	GL_CHECK();
 
 	// initialize the EGL display connection
 	result = eglInitialize(Display, NULL, NULL);
 	assert(EGL_FALSE != result);
-	check();
+	GL_CHECK();
 
 	// get an appropriate EGL frame buffer configuration
 	result = eglChooseConfig(Display, attribute_list, &config, 1, &num_config);
 	assert(EGL_FALSE != result);
-	check();
+	GL_CHECK();
 
 	// get an appropriate EGL frame buffer configuration
 	result = eglBindAPI(EGL_OPENGL_ES_API);
 	assert(EGL_FALSE != result);
-	check();
+	GL_CHECK();
 
 	// create an EGL rendering context
 	Context = eglCreateContext(Display, config, EGL_NO_CONTEXT, context_attributes);
 	assert(Context!=EGL_NO_CONTEXT);
-	check();
+	GL_CHECK();
 
 	// create an EGL window surface
 	success = graphics_get_display_size(0 /* LCD */, &ScrWidth, &ScrHeight);
@@ -135,22 +170,20 @@ bool GlWindow::CreateOpenGlContext()
 	nativewindow.height = ScrHeight;
 	vc_dispmanx_update_submit_sync( dispman_update );
 
-	check();
+	GL_CHECK();
 
 	Surface = eglCreateWindowSurface( Display, config, &nativewindow, NULL );
 	assert(Surface != EGL_NO_SURFACE);
-	check();
+	GL_CHECK();
 
 	// connect the context to the surface
 	result = eglMakeCurrent(Display, Surface, Surface, Context);
 	assert(EGL_FALSE != result);
-	check();
+	GL_CHECK();
 
 	return(true);
-/*
+
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-*/
 }
 
 void GlWindow::DestroyOpenGlContext()
@@ -649,6 +682,7 @@ void GlWindow::CloseEvents()
 void GlWindow::MainLoop()
 {
 	Init();
+	GL_CHECK();
 	while (!_request_end)
 	{
 		PreRender();
@@ -656,9 +690,11 @@ void GlWindow::MainLoop()
 
 		glFlush();
 		glFinish();
-		check();
+
+		GL_CHECK();
 		eglSwapBuffers(Display, Surface);
 	}
+	Uninit();
 	_CloseWindow();
 }
 

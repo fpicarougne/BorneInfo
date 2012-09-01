@@ -4,9 +4,30 @@
 
 #include "GlWindow.h"
 #include <time.h>
+#include <Utility/3D/CShaderProgram.h>
 
 class Client : protected GlWindow
 {
+private:
+	struct SShaders
+	{
+		SShaders() :
+			ShaderVertex(OpenUtility::CShaderFile::EVertexShader,"vertex shader"),
+			ShaderFragment(OpenUtility::CShaderFile::EFragmentShader,"fragment shader")
+		{
+			RenderingShader.AddShaderFile(&ShaderVertex);
+			RenderingShader.AddShaderFile(&ShaderFragment);
+		}
+		OpenUtility::CShaderProgram RenderingShader;
+		OpenUtility::CShaderFile ShaderVertex,ShaderFragment;
+	};
+	
+	struct SVertex
+	{
+		GLfloat position[3];
+		GLfloat normal[3];
+	} vertexStruct;
+
 public:
 	Client();
 	virtual ~Client();
@@ -14,6 +35,7 @@ public:
 
 protected:
 	void Init();
+	void Uninit();
 	void PreRender();
 	void Render();
 	void OnPeripheralAdd(unsigned int id,const char *name,EPeriphType type);
@@ -40,6 +62,10 @@ private:
 
 private:
 	struct timespec _debTime;
+	GLuint VBObuffer;
+	GLuint VBOindex;
+	unsigned int nbIndexes;
+	SShaders *Shaders;
 };
 
 #endif

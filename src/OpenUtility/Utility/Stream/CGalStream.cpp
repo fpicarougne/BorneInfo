@@ -3,7 +3,7 @@
 #include <malloc.h>
 #include <ctype.h>
 #include "Stream.h"
-#include "Memory.h"
+#include "../Memory.h"
 
 #ifndef max
 	#define max(a,b)	((a>b) ? a : b)

@@ -22,14 +22,29 @@
 
 #define FILE_LOG "borne.log"
 
-struct SEnv
+struct SParam
 {
-	SEnv() : termModified(false) {}
-	bool termModified;
-	struct termios terminal;
+	char name[];
+	int nbParam;
 };
 
-void InitEnv();
+struct SEnv
+{
+	SEnv() : termModified(false),debug(false),restartOnError(true) {}
+	bool termModified;
+	struct termios terminal;
+	bool debug;
+	bool restartOnError;
+	inline friend std::ostream& operator<<(std::ostream &s,const SEnv &obj)
+	{
+		s << "Paramètres d'environnement :" << std::endl;
+		s << "\tDebug: " << (obj.debug ? "true" : "false") << std::endl;
+		s << "\tRestart on error: " << (obj.restartOnError ? "true" : "false") << std::endl;
+		return(s);
+	}
+};
+
+void InitEnv(int argc,char *argv[]);
 void UninitEnv();
 void StartClient();
 void sigint_handler(int sig);
@@ -44,7 +59,7 @@ int main(int argc,char *argv[])
 	char c;
 
 	SwitchTTY();
-	InitEnv();
+	InitEnv(argc,argv);
 	signal(SIGINT,sigint_handler);
 
 	do
@@ -55,14 +70,14 @@ int main(int argc,char *argv[])
 		if (pid>0)
 		{
 			close(fd[OUT]);
-			if (read(fd[IN],&c,1)!=1) PrintLog("error","\tErreur de l'application -> redémarrage");
+			if (read(fd[IN],&c,1)!=1) PrintLog("error","\tErreur de l'application");
 			else if (c=='q') PrintLog("stop","\tDemande d'arrêt de l'application");
-			else PrintLog("stop-restart","\tPorcessus terminé avec un mauvais code (%d : '%c') -> redémarrage",c,c);
+			else PrintLog("stop-restart","\tPorcessus terminé avec un mauvais code (%d : '%c')",c,c);
 			nb++;
 			wait(&status);
 		}
 	}
-	while ((pid>0) && (c!='q'));
+	while ((pid>0) && (c!='q') && sEnv.restartOnError);
 	
 	if (pid==0)
 	{
@@ -87,12 +102,41 @@ void sigint_handler(int sig)
 	kill(getpid(),SIGINT);
 }
 
-void InitEnv()
+void InitEnv(int argc,char *argv[])
 {
 	int size;
 	char path[PATH_MAX+1];
 	std::ostringstream str;
 	struct termios tp;
+	unsigned char state;
+	char c;
+	int i,j;
+
+	for (j=1,state=0;j<argc;j++)
+	{
+		c=' ';
+		i=-1;
+		do
+		{
+			switch(state)
+			{
+			case 0:	// looking for '-'
+				if (c=='-') state=1;
+				break;
+
+			case 1:
+				if (c=='-') state=10;
+				else if (c==' ') state=0;
+				else if (c=='s') sEnv.restartOnError=false;
+				else if (c=='d') sEnv.debug=true;
+				break;
+
+			case 10:
+				break;
+			}
+			i++;
+		} while ((c=argv[j][i])!='\0');
+	}
 
 	str << "/proc/" << getpid() << "/exe";
 	if ((size=readlink(str.str().c_str(),path,PATH_MAX))<0) ExitError("Not able to get the path of the exe");

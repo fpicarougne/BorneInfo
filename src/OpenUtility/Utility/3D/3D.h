@@ -3,7 +3,7 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include "Stream.h"
+#include "../Stream/Stream.h"
 #include <iostream>
 
 #define DTOR 0.017453292519943295769236907684886

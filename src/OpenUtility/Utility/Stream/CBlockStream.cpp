@@ -3,7 +3,7 @@
 #include <malloc.h>
 #include <ctype.h>
 #include "Stream.h"
-#include "Memory.h"
+#include "../Memory.h"
 
 OpenUtility::CBlockStream::CBlockStream(int TBlock)
 {

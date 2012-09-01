@@ -209,13 +209,13 @@ XYZd& XYZd::operator/=(const double c)
 bool operator==(const XYZd &v1,const XYZd &v2)
 {
 	double precision=0.0000000000001;
-	return((abs(v1.x-v2.x)<precision) && (abs(v1.y-v2.y)<precision) && (abs(v1.z-v2.z)<precision));
+	return((fabs(v1.x-v2.x)<precision) && (fabs(v1.y-v2.y)<precision) && (fabs(v1.z-v2.z)<precision));
 }
 
 bool operator==(const XYZf &v1,const XYZf &v2)
 {
 	double precision=0.000000001;
-	return((abs(v1.x-v2.x)<precision) && (abs(v1.y-v2.y)<precision) && (abs(v1.z-v2.z)<precision));
+	return((fabs(v1.x-v2.x)<precision) && (fabs(v1.y-v2.y)<precision) && (fabs(v1.z-v2.z)<precision));
 }
 
 bool operator!=(const XYZd &v1,const XYZd &v2)
@@ -231,13 +231,13 @@ bool operator!=(const XYZf &v1,const XYZf &v2)
 bool operator==(const XYd &v1,const XYd &v2)
 {
 	double precision=0.0000000000001;
-	return((abs(v1.x-v2.x)<precision) && (abs(v1.y-v2.y)<precision));
+	return((fabs(v1.x-v2.x)<precision) && (fabs(v1.y-v2.y)<precision));
 }
 
 bool operator==(const XYf &v1,const XYf &v2)
 {
 	double precision=0.000000001;
-	return((abs(v1.x-v2.x)<precision) && (abs(v1.y-v2.y)<precision));
+	return((fabs(v1.x-v2.x)<precision) && (fabs(v1.y-v2.y)<precision));
 }
 
 bool operator!=(const XYd &v1,const XYd &v2)
@@ -253,13 +253,13 @@ bool operator!=(const XYf &v1,const XYf &v2)
 bool operator==(XYZd &v1,XYZd &v2)
 {
 	double precision=0.0000000000001;
-	return((abs(v1.x-v2.x)<precision) && (abs(v1.y-v2.y)<precision) && (abs(v1.z-v2.z)<precision));
+	return((fabs(v1.x-v2.x)<precision) && (fabs(v1.y-v2.y)<precision) && (fabs(v1.z-v2.z)<precision));
 }
 
 bool operator==(XYZf &v1,XYZf &v2)
 {
 	double precision=0.000000001;
-	return((abs(v1.x-v2.x)<precision) && (abs(v1.y-v2.y)<precision) && (abs(v1.z-v2.z)<precision));
+	return((fabs(v1.x-v2.x)<precision) && (fabs(v1.y-v2.y)<precision) && (fabs(v1.z-v2.z)<precision));
 }
 
 bool operator!=(XYZd &v1,XYZd &v2)

@@ -1,5 +1,5 @@
 #include "CBezierCurve.h"
-#include "Memory.h"
+#include "../Memory.h"
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>

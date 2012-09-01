@@ -2,7 +2,7 @@
 	#define FileHandling_h
 
 #include <stdlib.h>
-#include "Stream.h"
+#include "../Stream/Stream.h"
 
 namespace OpenUtility
 {

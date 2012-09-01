@@ -5,8 +5,8 @@
 #include <GLES2/gl2.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include <Utility/MultiThread.h>
-#include <Utility/Stream.h>
+#include <Utility/Parallelism/MultiThread.h>
+#include <Utility/Stream/Stream.h>
 #include <iostream>
 #include <Template/CTable.h>
 #include <Template/CListe.h>
@@ -27,6 +27,8 @@
 #ifndef UNSET_BIT
 	#define UNSET_BIT(bit, array) (array[(bit) / LONG_BITS]) &= ~(1L << ((bit) % LONG_BITS))
 #endif
+
+#define GL_CHECK() GlWindow::CheckGl(__FILE__,__LINE__)
 
 class GlWindow
 {
@@ -169,6 +171,7 @@ public:
 	static GlWindow::EPeriphAxe GetAxeBit(int bit,bool realAxe);
 	static GlWindow::EPeriphAxe GetAxeFromInt(int val);
 	static const char* GetAxeName(GlWindow::EPeriphAxe axe);
+	static void CheckGl(const char *file,int line);
 
 protected:
 	// Window information
@@ -182,6 +185,7 @@ protected:
 	void CloseWindow();
 	// OpenGL rendering
 	virtual void Init() {}
+	virtual void Uninit() {}
 	virtual void PreRender() {}
 	virtual void Render() {}
 	// Event catcher
