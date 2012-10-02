@@ -5,6 +5,8 @@
 #include "GlWindow.h"
 #include <time.h>
 #include <Utility/3D/CShaderProgram.h>
+#include <Utility/3D/CTexture.h>
+#include <Utility/3D/CTextureQuad.h>
 
 class Client : protected GlWindow
 {
@@ -26,7 +28,12 @@ private:
 	{
 		GLfloat position[3];
 		GLfloat normal[3];
-	} vertexStruct;
+	};
+
+	struct STexture
+	{
+		GLfloat coord[2];
+	};
 
 public:
 	Client();
@@ -64,8 +71,10 @@ private:
 	struct timespec _debTime;
 	GLuint VBObuffer;
 	GLuint VBOindex;
+	GLuint VBOtex;
 	unsigned int nbIndexes;
 	SShaders *Shaders;
+	CTextureQuad *TexQuad;
 };
 
 #endif

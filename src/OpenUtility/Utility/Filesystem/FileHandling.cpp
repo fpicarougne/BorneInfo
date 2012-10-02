@@ -123,7 +123,7 @@ bool OpenUtility::isDir(const char *file)
 #endif
 }
 
-void OpenUtility::ParseFileName(char *file,CStream &dir,CStream &fileName,CStream &ext)
+void OpenUtility::ParseFileName(const char * const file,CStream &dir,CStream &fileName,CStream &ext)
 {
 	int len=strlen(file);
 	bool dot=false;
@@ -139,7 +139,7 @@ void OpenUtility::ParseFileName(char *file,CStream &dir,CStream &fileName,CStrea
 		char *str;
 		int i;
 
-		str=&file[len-1];
+		str=const_cast<char*>(&file[len-1]);
 		i=0;
 		while ((str!=file) && (*str!='\\') && (*str!='/'))
 		{
@@ -165,7 +165,7 @@ void OpenUtility::ParseFileName(char *file,CStream &dir,CStream &fileName,CStrea
 	}
 }
 
-size_t OpenUtility::GetFileSize(char * const file)
+size_t OpenUtility::GetFileSize(const char * const file)
 {
 #ifdef WIN32
 	hFile=CreateFile(file,GENERIC_READ,0,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
