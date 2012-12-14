@@ -1,11 +1,43 @@
 #ifdef WIN32
 	#include <GL/glew.h>
 #else
-#ifdef GLES2
-	#include <GLES2/gl2.h>
-#endif
+	#ifdef GLES2
+		#include <GLES2/gl2.h>
+	#endif
 #endif
 #include "CShaderProgram.h"
+
+OpenUtility::CShaderProgram::Exception::Exception(OpenUtility::CShaderProgram::Exception::EError err,const char *detail) :
+	ErrType(err),
+	Detail(detail)
+{
+	UpdateStr();
+}
+
+OpenUtility::CShaderProgram::Exception::Exception(const OpenUtility::CShaderProgram::Exception &obj) :
+	OpenUtility::Exception(obj),
+	ErrType(obj.ErrType),
+	Detail(obj.Detail)
+{
+}
+
+void OpenUtility::CShaderProgram::Exception::UpdateStr()
+{
+	if (Error.GetSize()) Error.AddStream('\n');
+	switch(ErrType)
+	{
+	case EErrNotValid:
+		Error+="Shader program not valid";
+		break;
+
+	case EErrIdNotFound:
+		Error+="Shader variable id not found";
+		if (Detail.GetSize()) Error.AddFormatStream(" (%s)",Detail.GetStream());
+		break;
+	}
+}
+
+//****************************************************************************************
 
 OpenUtility::CShaderProgram::CShaderProgram() :
 	State(EProgramNotValid),
@@ -253,8 +285,9 @@ GLint OpenUtility::CShaderProgram::GetVariableId(const char *str)
 	{
 		SShaderVariable *ShaderVariable;
 
-		if (!MapVariable.Lookup(str,(void*&)ShaderVariable)) return(0);
+		if (!MapVariable.Lookup(str,(void*&)ShaderVariable)) THROW(Exception,Exception::EErrIdNotFound,str);
 		return(ShaderVariable->Id);
 	}
+	THROW(Exception,Exception::EErrNotValid);
 	return(0);
 }

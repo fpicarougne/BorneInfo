@@ -4,12 +4,40 @@
 #include "CShaderFile.h"
 #include "../../Template/CMap.h"
 #include "../../Template/CVector.h"
+#include "../OUException.h"
 
 namespace OpenUtility
 {
 
 class CShaderProgram
 {
+public:
+	class Exception : public OpenUtility::Exception
+	{
+		friend class CShaderProgram;
+
+	private:
+		enum EError
+		{
+			EErrNotValid,
+			EErrIdNotFound
+		};
+	
+	private:
+		Exception(EError err,const char *detail=NULL);
+
+	public:
+		Exception(const Exception &obj);
+		~Exception() throw() {}
+
+	protected:
+		void UpdateStr();
+
+	private:
+		EError ErrType;
+		CStream Detail;
+	};
+
 private:
 	enum EProgramState
 	{

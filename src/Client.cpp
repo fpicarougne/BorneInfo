@@ -22,43 +22,50 @@ void Client::Start()
 
 void Client::Init()
 {
-	clock_gettime(CLOCK_MONOTONIC,&_debTime);
+	try
+	{
+		clock_gettime(CLOCK_MONOTONIC,&_debTime);
 
-	Shaders=new SShaders;
-	if (!Shaders->ShaderVertex.LoadFile("../shader/rendering.vert"))
-		std::cout << "-----------------------------------\nErreur vertex shader :\n" << Shaders->ShaderVertex.GetLog() << std::endl << "--------------------------" << std::endl;
-	if (!Shaders->ShaderFragment.LoadFile("../shader/rendering.frag"))
-		std::cout << "-----------------------------------\nErreur fragment shader :\n" << Shaders->ShaderFragment.GetLog() << std::endl << "--------------------------" << std::endl;
-	if (!Shaders->RenderingShader.LinkProgram())
-		std::cout << "-----------------------------------\nErreur shader program :\n" << Shaders->RenderingShader.GetLog() << std::endl << "--------------------------" << std::endl;
+		Shaders=new SShaders;
+		if (!Shaders->ShaderVertex.LoadFile("../shader/rendering.vert"))
+			std::cout << "-----------------------------------\nErreur vertex shader :\n" << Shaders->ShaderVertex.GetLog() << std::endl << "--------------------------" << std::endl;
+		if (!Shaders->ShaderFragment.LoadFile("../shader/rendering.frag"))
+			std::cout << "-----------------------------------\nErreur fragment shader :\n" << Shaders->ShaderFragment.GetLog() << std::endl << "--------------------------" << std::endl;
+		if (!Shaders->RenderingShader.LinkProgram())
+			std::cout << "-----------------------------------\nErreur shader program :\n" << Shaders->RenderingShader.GetLog() << std::endl << "--------------------------" << std::endl;
 
-	Shaders->RenderingShader.UseProgram();
+		Shaders->RenderingShader.UseProgram();
 
-	// Set background color and clear buffers
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		// Set background color and clear buffers
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// Initialisation of the opengl state
-	glEnable(GL_DEPTH_TEST);
+		// Initialisation of the opengl state
+		glEnable(GL_DEPTH_TEST);
 
-	// Data to visualize
-	TexQuad=new CTextureQuad("../content/polytech.png",20,20);
-	GL_CHECK();
+		// Data to visualize
+		TexQuad=new CTextureQuad("../content/polytech.png",20,20);
+		GL_CHECK();
 
-	// Matrix operations
-	OpenUtility::CMat4x4<float> MVmatrix,Pmatrix,MVPmatrix;
-	float factor=1;
+		// Matrix operations
+		OpenUtility::CMat4x4<float> MVmatrix,Pmatrix,MVPmatrix;
+		float factor=1;
 
-//	MVmatrix*=OpenUtility::CMat4x4<float>().SetLookAt(0,2,3,0,0,0,0,1,0);
-	MVmatrix*=OpenUtility::CMat4x4<float>().SetLookAt(0,0,1.2,0,0,0,0,1,0);
-	Pmatrix.SetFrustum(-factor,factor,-factor*GetHeight()/float(GetWidth()),factor*GetHeight()/float(GetWidth()),0.1f,1000);
-	glUniformMatrix4fv(Shaders->RenderingShader["u_Nmatrix"],1,GL_FALSE,MVmatrix.GetMatrix());
-	GL_CHECK();
-	glUniformMatrix4fv(Shaders->RenderingShader["u_MVPmatrix"],1,GL_FALSE,(Pmatrix*MVmatrix).GetMatrix());
-	GL_CHECK();
+	//	MVmatrix*=OpenUtility::CMat4x4<float>().SetLookAt(0,2,3,0,0,0,0,1,0);
+		MVmatrix*=OpenUtility::CMat4x4<float>().SetLookAt(0,0,1.2,0,0,0,0,1,0);
+		Pmatrix.SetFrustum(-factor,factor,-factor*GetHeight()/float(GetWidth()),factor*GetHeight()/float(GetWidth()),0.1f,1000);
+		glUniformMatrix4fv(Shaders->RenderingShader["u_Nmatrix"],1,GL_FALSE,MVmatrix.GetMatrix());
+		GL_CHECK();
+		glUniformMatrix4fv(Shaders->RenderingShader["u_MVPmatrix"],1,GL_FALSE,(Pmatrix*MVmatrix).GetMatrix());
+		GL_CHECK();
 
-	glViewport(0,0,GetWidth(),GetHeight());
-	GL_CHECK();
+		glViewport(0,0,GetWidth(),GetHeight());
+		GL_CHECK();
+	}
+	catch(OpenUtility::CShaderProgram::Exception e)
+	{
+		std::cout << e.what() << std::endl;
+	}
 }
 
 void Client::Uninit()
@@ -83,16 +90,23 @@ void Client::PreRender()
 
 void Client::Render()
 {
-	glClearColor(0.0f, 0.4f, 0.5f, 0.5f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	try
+	{
+		glClearColor(0.0f, 0.4f, 0.5f, 0.5f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glActiveTexture(GL_TEXTURE0);
-	glUniform1i(Shaders->RenderingShader["u_texId"],0);
-	TexQuad->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
+		glActiveTexture(GL_TEXTURE0);
+		glUniform1i(Shaders->RenderingShader["u_texId"],0);
+		TexQuad->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
 
-	for (int i=0;i<1;i++)
-		TexQuad->Draw();
-	GL_CHECK();
+		for (int i=0;i<1;i++)
+			TexQuad->Draw();
+		GL_CHECK();
+	}
+	catch(OpenUtility::CShaderProgram::Exception &e)
+	{
+		std::cout << e << std::endl;
+	}
 }
 
 timespec Client::DiffTime(timespec start,timespec end)
