@@ -52,11 +52,11 @@ CTexture* CTexture::LoadTexture(const char *file,unsigned long w,unsigned long h
 			{
 				i=1;
 				while ((w>>i)!=0) i++;
-				if (w==(1<<(i-1))) i--;
+				if (w==(1ul<<(i-1))) i--;
 				wT=1<<i;
 				i=1;
 				while ((h>>i)!=0) i++;
-				if (h==(1<<(i-1))) i--;
+				if (h==(1ul<<(i-1))) i--;
 				hT=1<<i;
 			}
 
