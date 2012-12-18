@@ -45,6 +45,7 @@ struct SEnv
 };
 
 void InitEnv(int argc,char *argv[]);
+void ClearTerminal();
 void UninitEnv();
 void StartClient();
 void sigint_handler(int sig);
@@ -58,39 +59,45 @@ int main(int argc,char *argv[])
 	int nb=0;
 	char c;
 
-	SwitchTTY();
 	InitEnv(argc,argv);
-	signal(SIGINT,sigint_handler);
 
-	do
+	if (sEnv.debug) StartClient();
+	else
 	{
-		if (pipe(fd)<0) ExitError("Error creating pipe control");
-		if ((pid=fork())<0) ExitError("Error creating child process");
+		SwitchTTY();
+		ClearTerminal();
+		signal(SIGINT,sigint_handler);
 
-		if (pid>0)
+		do
 		{
-			close(fd[OUT]);
-			if (read(fd[IN],&c,1)!=1) PrintLog("error","\tErreur de l'application");
-			else if (c=='q') PrintLog("stop","\tDemande d'arrêt de l'application");
-			else PrintLog("stop-restart","\tPorcessus terminé avec un mauvais code (%d : '%c')",c,c);
-			nb++;
-			wait(&status);
-		}
-	}
-	while ((pid>0) && (c!='q') && sEnv.restartOnError);
-	
-	if (pid==0)
-	{
-		signal(SIGINT,SIG_DFL);
-		close(fd[IN]);
-		PrintLog("start");
-		StartClient();
-		c='q';
-		write(fd[OUT],&c,1);
-		return(0);
-	}
+			if (pipe(fd)<0) ExitError("Error creating pipe control");
+			if ((pid=fork())<0) ExitError("Error creating child process");
 
-	UninitEnv();
+			if (pid>0)
+			{
+				close(fd[OUT]);
+				if (read(fd[IN],&c,1)!=1) PrintLog("error","\tErreur de l'application");
+				else if (c=='q') PrintLog("stop","\tDemande d'arrêt de l'application");
+				else PrintLog("stop-restart","\tPorcessus terminé avec un mauvais code (%d : '%c')",c,c);
+				nb++;
+				wait(&status);
+			}
+		}
+		while ((pid>0) && (c!='q') && sEnv.restartOnError);
+
+		if (pid==0)
+		{
+			signal(SIGINT,SIG_DFL);
+			close(fd[IN]);
+			PrintLog("start");
+			StartClient();
+			c='q';
+			write(fd[OUT],&c,1);
+			return(0);
+		}
+
+		UninitEnv();
+	}
 	
 	return(0);
 }
@@ -107,7 +114,6 @@ void InitEnv(int argc,char *argv[])
 	int size;
 	char path[PATH_MAX+1];
 	std::ostringstream str;
-	struct termios tp;
 	unsigned char state;
 	char c;
 	int i,j;
@@ -146,6 +152,11 @@ void InitEnv(int argc,char *argv[])
 	chdir(path);
 
 	PrintLog("global start","\texe path : %s",path);
+}
+
+void ClearTerminal()
+{
+	struct termios tp;
 
 	std::cout << "\e[2J" << "\e[1;1H" << "\e[?16c" << std::flush;
 
