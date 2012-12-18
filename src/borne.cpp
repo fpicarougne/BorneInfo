@@ -1,5 +1,6 @@
 //coding: utf-8
 #include <bcm_host.h>
+#include <linux/limits.h>
 #include <iostream>
 #include <sstream>
 #include <cstdio>
