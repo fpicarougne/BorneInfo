@@ -6,6 +6,7 @@
 Client::Client() :
 	nbIndexes(0),
 	Shaders(NULL),
+	Font40(NULL),
 	TexQuad(NULL)
 {
 }
@@ -44,15 +45,18 @@ void Client::Init()
 		glEnable(GL_DEPTH_TEST);
 
 		// Data to visualize
-		TexQuad=new CTextureQuad("../content/polytech.png",20,20);
+		GL_CHECK();
+		Font40=new OpenUtility::CFontLoader("../content/verdana.ttf",40);
+//		TexQuad=new OpenUtility::CTextureQuad("../content/polytech.png",20,20);
+		TexQuad=new OpenUtility::CTextureQuad(Font40->GetFontTexture(),15,15);
 		GL_CHECK();
 
 		// Matrix operations
 		OpenUtility::CMat4x4<float> MVmatrix,Pmatrix,MVPmatrix;
 		float factor=1;
 
-	//	MVmatrix*=OpenUtility::CMat4x4<float>().SetLookAt(0,2,3,0,0,0,0,1,0);
-		MVmatrix*=OpenUtility::CMat4x4<float>().SetLookAt(0,0,1.2,0,0,0,0,1,0);
+//		MVmatrix*=OpenUtility::CMat4x4<float>().SetLookAt(0,2,3,0,0,0,0,1,0);
+		MVmatrix*=(OpenUtility::CMat4x4<float>()).SetLookAt(0,0,1.2,0,0,0,0,1,0);
 		Pmatrix.SetFrustum(-factor,factor,-factor*GetHeight()/float(GetWidth()),factor*GetHeight()/float(GetWidth()),0.1f,1000);
 		glUniformMatrix4fv(Shaders->RenderingShader["u_Nmatrix"],1,GL_FALSE,MVmatrix.GetMatrix());
 		GL_CHECK();
@@ -71,6 +75,7 @@ void Client::Init()
 void Client::Uninit()
 {
 	delete TexQuad;
+	delete Font40;
 	glDeleteBuffers(1,&VBObuffer);
 	glDeleteBuffers(1,&VBOtex);
 	glDeleteBuffers(1,&VBOindex);

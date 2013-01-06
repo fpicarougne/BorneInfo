@@ -3,6 +3,9 @@
 
 #include "CTexture.h"
 
+namespace OpenUtility
+{
+
 class CTextureQuad
 {
 private:
@@ -15,13 +18,13 @@ private:
 
 public:
 	CTextureQuad(const char *srcImg,double maxW=1.0,double maxH=1.0);
-	CTextureQuad(CTexture *tex,double maxW=1.0,double maxH=1.0);
+	CTextureQuad(const CTexture *tex,double maxW=1.0,double maxH=1.0);
 	CTextureQuad(const CTextureQuad &obj);
 	virtual ~CTextureQuad();
 	CTextureQuad& operator=(const CTextureQuad &obj);
-	inline CTexture* GetTexture() {return(Texture);}
-	inline double GetW() {return(w);}
-	inline double GetH() {return(h);}
+	inline const CTexture* GetTexture() const {return(Texture);}
+	inline double GetW() const {return(w);}
+	inline double GetH() const {return(h);}
 	void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex);
 	void Draw();
 
@@ -31,9 +34,11 @@ private:
 
 private:
 	bool HasAllocatedTex;
-	CTexture *Texture;
+	const CTexture *Texture;
 	double w,h;
 	GLuint VBObuffer;
 };
+
+}
 
 #endif

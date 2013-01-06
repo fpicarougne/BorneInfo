@@ -3,6 +3,8 @@
 
 #define DEF_SIZE_Table 30
 
+#include <Utility/Memory.h>
+
 namespace OpenUtility
 {
 

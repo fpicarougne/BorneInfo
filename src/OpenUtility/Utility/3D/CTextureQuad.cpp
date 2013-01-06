@@ -1,21 +1,21 @@
 #include "CTextureQuad.h"
 #include <stddef.h>
 
-CTextureQuad::CTextureQuad(const char *srcImg,double maxW,double maxH)
+OpenUtility::CTextureQuad::CTextureQuad(const char *srcImg,double maxW,double maxH)
 {
-	Texture=CTexture::LoadTexture(srcImg);
+	Texture=CTexture::LoadTextureFile(srcImg);
 	HasAllocatedTex=true;
 	CalcSize(maxW,maxH);
 }
 
-CTextureQuad::CTextureQuad(CTexture *tex,double maxW,double maxH) :
+OpenUtility::CTextureQuad::CTextureQuad(const CTexture *tex,double maxW,double maxH) :
 	HasAllocatedTex(false),
 	Texture(tex)
 {
 	CalcSize(maxW,maxH);
 }
 
-CTextureQuad::CTextureQuad(const CTextureQuad &obj) :
+OpenUtility::CTextureQuad::CTextureQuad(const CTextureQuad &obj) :
 	HasAllocatedTex(false),
 	Texture(obj.Texture),
 	w(obj.w),
@@ -23,7 +23,7 @@ CTextureQuad::CTextureQuad(const CTextureQuad &obj) :
 {
 }
 
-CTextureQuad& CTextureQuad::operator=(const CTextureQuad &obj)
+OpenUtility::CTextureQuad& OpenUtility::CTextureQuad::operator=(const CTextureQuad &obj)
 {
 	HasAllocatedTex=false;
 	Texture=obj.Texture;
@@ -32,13 +32,13 @@ CTextureQuad& CTextureQuad::operator=(const CTextureQuad &obj)
 	return(*this);
 }
 
-CTextureQuad::~CTextureQuad()
+OpenUtility::CTextureQuad::~CTextureQuad()
 {
 	if (HasAllocatedTex)
 		delete Texture;
 }
 
-void CTextureQuad::CalcSize(double maxW,double maxH)
+void OpenUtility::CTextureQuad::CalcSize(double maxW,double maxH)
 {
 	if (Texture)
 	{
@@ -77,7 +77,7 @@ void CTextureQuad::CalcSize(double maxW,double maxH)
 	glBufferData(GL_ARRAY_BUFFER,sizeof(VertexArray),VertexArray,GL_STATIC_DRAW);
 }
 
-void CTextureQuad::SetVertex(SVertex &vertex,double posX,double posY,double texX,double texY)
+void OpenUtility::CTextureQuad::SetVertex(SVertex &vertex,double posX,double posY,double texX,double texY)
 {
 	vertex.position[0]=posX;
 	vertex.position[1]=posY;
@@ -89,7 +89,7 @@ void CTextureQuad::SetVertex(SVertex &vertex,double posX,double posY,double texX
 	vertex.texcoord[1]=texY;
 }
 
-void CTextureQuad::AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex)
+void OpenUtility::CTextureQuad::AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex)
 {
 	glBindBuffer(GL_ARRAY_BUFFER,VBObuffer);
 	glVertexAttribPointer(vPos,3,GL_FLOAT,GL_FALSE,sizeof(SVertex),(void*)offsetof(SVertex,position));
@@ -101,7 +101,7 @@ void CTextureQuad::AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex)
 	glBindTexture(GL_TEXTURE_2D,Texture->GetId());
 }
 
-void CTextureQuad::Draw()
+void OpenUtility::CTextureQuad::Draw()
 {
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 }

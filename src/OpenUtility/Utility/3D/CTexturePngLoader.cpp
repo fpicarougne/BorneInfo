@@ -3,13 +3,13 @@
 #include <string.h>
 #include <png.h>
 
-bool CTexturePngLoader::IsCapable(const char *ext)
+bool OpenUtility::CTexturePngLoader::IsCapable(const char *ext)
 {
 	if (CTextureLoader::IsCapable(ext,"png")) return(true);
 	return(false);
 }
 
-unsigned char* CTexturePngLoader::Load(const char *file,unsigned long &w,unsigned long &h,bool nonPowerOf2)
+unsigned char* OpenUtility::CTexturePngLoader::Load(const char *file,unsigned long &w,unsigned long &h)
 {
 	FILE *fp;
 	png_byte header[8];
@@ -36,7 +36,7 @@ unsigned char* CTexturePngLoader::Load(const char *file,unsigned long &w,unsigne
 	}
 
 	// create png info struct
-	if ((info_ptr= png_create_info_struct(png_ptr))==0)
+	if ((info_ptr=png_create_info_struct(png_ptr))==0)
 	{
 		png_destroy_read_struct(&png_ptr,(png_infopp)NULL,(png_infopp)NULL);
 		fclose(fp);
@@ -116,7 +116,7 @@ unsigned char* CTexturePngLoader::Load(const char *file,unsigned long &w,unsigne
 	return(image_data);
 }
 
-void CTexturePngLoader::DestroyData(unsigned char *data)
+void OpenUtility::CTexturePngLoader::DestroyData(unsigned char *data)
 {
 	free(data);
 }
