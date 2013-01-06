@@ -3,12 +3,15 @@
 
 #include "CTexture.h"
 
+namespace OpenUtility
+{
+
 class CTexturePngLoader : public CTexture::CTextureLoader
 {
 public:
 	CTexturePngLoader() {}
 	virtual ~CTexturePngLoader() {}
-	unsigned char* Load(const char *file,unsigned long &w,unsigned long &h,bool nonPowerOf2=false);
+	unsigned char* Load(const char *file,unsigned long &w,unsigned long &h);
 	void DestroyData(unsigned char *data);
 	bool IsCapable(const char *ext);
 
@@ -17,5 +20,7 @@ private:
 	CTexturePngLoader& operator=(const CTexturePngLoader &obj) {return *this;}
 	bool IsCapable(const char *ext,const char *verif);
 };
+
+}
 
 #endif

@@ -1,9 +1,9 @@
 #include "CTexture.h"
 #include "CTexturePngLoader.h"
 
-CTexturePngLoader PngLoader;
+OpenUtility::CTexturePngLoader PngLoader;
 
-void CTexture::InitTextureLoader()
+void OpenUtility::CTexture::InitTextureLoader()
 {
 	static bool isInit=false;
 

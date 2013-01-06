@@ -112,6 +112,20 @@ void OpenUtility::ReleaseDirList(OpenUtility::DIRHANDLE dirList)
 	delete dirList;
 }
 
+bool OpenUtility::isFile(const char *file)
+{
+#ifdef WIN32
+	DWORD attr;
+
+	if ((attr=GetFileAttributesA(file))==INVALID_FILE_ATTRIBUTES) return(false);
+	return((attr & ~FILE_ATTRIBUTE_DIRECTORY)!=0);
+#else
+	struct stat buf;
+	if (stat(file,&buf)) return(false);
+	return(!S_ISDIR(buf.st_mode));
+#endif
+}
+
 bool OpenUtility::isDir(const char *file)
 {
 #ifdef WIN32

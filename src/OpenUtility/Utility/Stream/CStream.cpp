@@ -69,8 +69,8 @@ char& OpenUtility::CStream::operator[](const int i)
 		throw(E);
 	}
 
-	// Attention l'indice peut être négatif, 
-	// l'indexation se fait alors à partir de la fin de la chaine
+	// Attention l'indice peut ï¿½tre nï¿½gatif, 
+	// l'indexation se fait alors ï¿½ partir de la fin de la chaine
 	if (i>=0) return Stream[i];
 	else return Stream[taille+i];
 }
@@ -408,12 +408,12 @@ istream& operator>>(istream &ar,OpenUtility::CStream &S)
 	// Vide la chaine
 	S.Stream="";
 
-	// Lit les espaces avant le début du flot d'entrée
+	// Lit les espaces avant le dï¿½but du flot d'entrï¿½e
 	do ar.get(c);
 	while ((c==' ') || (c=='\t') || (c=='\n'));
 
-	// Lit et place dans la chaine tous les caractères du flot d'entrée
-	// jusqu'à un signe de séparation
+	// Lit et place dans la chaine tous les caractï¿½res du flot d'entrï¿½e
+	// jusqu'ï¿½ un signe de sï¿½paration
 	while ((c!=' ') && (c!='\t') && (c!='\n'))
 	{
 		S.AddStream(c);
@@ -446,7 +446,7 @@ void OpenUtility::CStream::Format(const char *StrFormat,...)
 	}
 	taille=RealLen;
 
-	va_end(marker);	// Libère la variable arguments
+	va_end(marker);	// Libï¿½re la variable arguments
 }
 
 void OpenUtility::CStream::VFormat(const char *StrFormat,va_list argList)
@@ -481,7 +481,7 @@ void OpenUtility::CStream::AddFormatStream(const char *StrFormat,...)
 	}
 	taille+=RealLen;
 
-	va_end(marker);	// Libère la variable arguments
+	va_end(marker);	// Libï¿½re la variable arguments
 }
 
 void OpenUtility::CStream::AddVFormatStream(const char *StrFormat,va_list argList)

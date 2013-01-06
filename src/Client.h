@@ -7,6 +7,7 @@
 #include <Utility/3D/CShaderProgram.h>
 #include <Utility/3D/CTexture.h>
 #include <Utility/3D/CTextureQuad.h>
+#include <Utility/3D/CFontEngine.h>
 
 class Client : protected GlWindow
 {
@@ -74,7 +75,8 @@ private:
 	GLuint VBOtex;
 	unsigned int nbIndexes;
 	SShaders *Shaders;
-	CTextureQuad *TexQuad;
+        OpenUtility::CFontLoader *Font40;
+	OpenUtility::CTextureQuad *TexQuad;
 };
 
 #endif
