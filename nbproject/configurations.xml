@@ -300,6 +300,8 @@
               <in>FileHandling.cpp</in>
               <in>FileHandling.h</in>
             </df>
+            <df name="Filesystem">
+            </df>
             <df name="Math">
               <in>CBezierCurve.cpp</in>
               <in>CBezierCurve.h</in>
@@ -401,8 +403,6 @@
       <item path="extern/include/IL/OMX_Types.h" ex="true" tool="3" flavor="0">
       </item>
       <item path="extern/include/IL/OMX_Video.h" ex="true" tool="3" flavor="0">
-      </item>
-      <item path="extern/include/KHR/khrplatform.h" ex="true" tool="3" flavor="0">
       </item>
       <item path="extern/include/VG/openvg.h" ex="true" tool="3" flavor="0">
       </item>
@@ -526,43 +526,6 @@
       <item path="extern/include/ft2build.h" ex="true" tool="3" flavor="0">
       </item>
       <item path="extern/include/ilclient.h" ex="true" tool="3" flavor="0">
-      </item>
-      <item path="extern/include/interface/vchi/connections/connection.h"
-            ex="true"
-            tool="3"
-            flavor="0">
-      </item>
-      <item path="extern/include/interface/vchi/message_drivers/message.h"
-            ex="true"
-            tool="3"
-            flavor="0">
-      </item>
-      <item path="extern/include/interface/vchi/vchi.h" ex="true" tool="3" flavor="0">
-      </item>
-      <item path="extern/include/interface/vchi/vchi_autoservice.h"
-            ex="true"
-            tool="3"
-            flavor="0">
-      </item>
-      <item path="extern/include/interface/vchi/vchi_cfg.h"
-            ex="true"
-            tool="3"
-            flavor="0">
-      </item>
-      <item path="extern/include/interface/vchi/vchi_cfg_internal.h"
-            ex="true"
-            tool="3"
-            flavor="0">
-      </item>
-      <item path="extern/include/interface/vchi/vchi_common.h"
-            ex="true"
-            tool="3"
-            flavor="0">
-      </item>
-      <item path="extern/include/interface/vchi/vchi_mh.h"
-            ex="true"
-            tool="3"
-            flavor="0">
       </item>
       <item path="extern/include/interface/vchiq_arm/vchiq.h"
             ex="true"
@@ -996,11 +959,6 @@
             tool="3"
             flavor="0">
       </item>
-      <item path="extern/include/interface/vmcs_host/vchi_local/vchost_config.h"
-            ex="true"
-            tool="3"
-            flavor="0">
-      </item>
       <item path="extern/include/interface/vmcs_host/vchost.h"
             ex="true"
             tool="3"
@@ -1024,8 +982,6 @@
       <item path="extern/include/png.h" ex="true" tool="3" flavor="0">
       </item>
       <item path="extern/include/pngconf.h" ex="true" tool="3" flavor="0">
-      </item>
-      <item path="extern/include/vcinclude/common.h" ex="true" tool="3" flavor="0">
       </item>
       <item path="extern/include/zconf.h" ex="true" tool="3" flavor="0">
       </item>
