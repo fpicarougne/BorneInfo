@@ -7,7 +7,8 @@ Client::Client() :
 	nbIndexes(0),
 	Shaders(NULL),
 	Font40(NULL),
-	TexQuad(NULL)
+	TexQuad(NULL),
+	_3dText(NULL)
 {
 }
 
@@ -48,7 +49,9 @@ void Client::Init()
 		GL_CHECK();
 		Font40=new OpenUtility::CFontLoader("../content/verdana.ttf",40);
 //		TexQuad=new OpenUtility::CTextureQuad("../content/polytech.png",20,20);
-		TexQuad=new OpenUtility::CTextureQuad(Font40->GetFontTexture(),15,15);
+		TexQuad=new OpenUtility::CTextureQuad(Font40->GetFontTexture(),0.15,0.15);
+		_3dText=new OpenUtility::C3DText(Font40);
+		_3dText->SetText("Bonjour, il est 14:12",OpenUtility::CFontLoader::CFontEngine::EHAlignCenter,OpenUtility::CFontLoader::CFontEngine::EVAlignBaseligne);
 		GL_CHECK();
 
 		// Matrix operations
@@ -75,6 +78,7 @@ void Client::Init()
 void Client::Uninit()
 {
 	delete TexQuad;
+	delete _3dText;
 	delete Font40;
 	glDeleteBuffers(1,&VBObuffer);
 	glDeleteBuffers(1,&VBOtex);
@@ -102,10 +106,12 @@ void Client::Render()
 
 		glActiveTexture(GL_TEXTURE0);
 		glUniform1i(Shaders->RenderingShader["u_texId"],0);
-		TexQuad->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
 
-		for (int i=0;i<1;i++)
-			TexQuad->Draw();
+		TexQuad->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
+		TexQuad->Draw();
+
+		_3dText->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
+		_3dText->Draw();
 		GL_CHECK();
 	}
 	catch(OpenUtility::CShaderProgram::Exception &e)
@@ -130,8 +136,17 @@ timespec Client::DiffTime(timespec start,timespec end)
 void Client::OnKeyDown(unsigned int id,int keyCode)
 {
 	std::cout << "Press (id #" << id << ") : " << keyCode << std::endl;
-	if (keyCode==KEY_Q)
+}
+
+void Client::OnKeyUp(unsigned int id,int keyCode)
+{
+	std::cout << "Release (id #" << id << ") : " << keyCode << std::endl;
+	switch (keyCode)
+	{
+	case KEY_Q:
 		CloseWindow();
+		break;
+	}
 }
 
 void Client::OnPeripheralAdd(unsigned int id,const char *name,EPeriphType type)
@@ -172,11 +187,6 @@ void Client::OnTiltChange(unsigned int id,double x,double y)
 void Client::OnAxeChange(unsigned int id,GlWindow::EPeriphAxe axe,double val)
 {
 	std::cout << "Axe (id #" << id << ") axe " << GlWindow::GetAxeName(axe) << " : val=" << val << std::endl;
-}
-
-void Client::OnKeyUp(unsigned int id,int keyCode)
-{
-	std::cout << "Release (id #" << id << ") : " << keyCode << std::endl;
 }
 
 void Client::OnMouseButtonDown(unsigned int id,int b,double x,double y)

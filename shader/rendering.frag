@@ -1,7 +1,7 @@
 precision mediump float;
 
 //uniform vec3 u_LightDir;
-//uniform vec3 u_LightColor;   
+//uniform vec3 u_LightColor;
 uniform sampler2D u_texId;
 
 varying vec3 v_Normals;

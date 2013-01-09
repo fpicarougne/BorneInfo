@@ -9,6 +9,14 @@ namespace OpenUtility
 
 class C3DText : public CFontLoader::CFontEngine
 {
+private:
+	struct SVertex
+	{
+		GLfloat position[3];
+		GLfloat normal[3];
+		GLfloat texcoord[2];
+	};
+
 public:
 	C3DText(const CFontLoader *loader);
 	C3DText(const C3DText &obj);
@@ -17,12 +25,19 @@ public:
 	void SetText(const char *text,EHAlign hAlign=EHAlignLeft,EVAlign vAlign=EVAlignBaseligne);
         void UpdateText(const char *text);
 	void SetAlignement(EHAlign hAlign=EHAlignLeft,EVAlign vAlign=EVAlignBaseligne);
-	void DrawText();
+    void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex);
+	void Draw();
+
+private:
+	void SetVertex(SVertex &vertex,double posX,double posY,double texX,double texY);
 
 private:
     CStream Text;
     EHAlign CurrentHAlign;
-    EHAlign CurrentVAlign;
+    EVAlign CurrentVAlign;
+    SVertex *VertexTab;
+    GLuint VBObuffer;
+    int TotalX,MinY,MaxY;
 };
 
 }

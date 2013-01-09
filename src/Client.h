@@ -7,7 +7,7 @@
 #include <Utility/3D/CShaderProgram.h>
 #include <Utility/3D/CTexture.h>
 #include <Utility/3D/CTextureQuad.h>
-#include <Utility/3D/CFontEngine.h>
+#include <Utility/3D/C3DText.h>
 
 class Client : protected GlWindow
 {
@@ -24,7 +24,7 @@ private:
 		OpenUtility::CShaderProgram RenderingShader;
 		OpenUtility::CShaderFile ShaderVertex,ShaderFragment;
 	};
-	
+
 	struct SVertex
 	{
 		GLfloat position[3];
@@ -77,6 +77,7 @@ private:
 	SShaders *Shaders;
         OpenUtility::CFontLoader *Font40;
 	OpenUtility::CTextureQuad *TexQuad;
+    OpenUtility::C3DText *_3dText;
 };
 
 #endif
