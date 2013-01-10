@@ -36,10 +36,11 @@ OpenUtility::CTexture* OpenUtility::CTexture::LoadTextureFile(const char *file,u
 	if ((texLoader=GetLoader(file))!=NULL)
 	{
 		unsigned char *data;
+		EPicMode channel;
 
-		if ((data=texLoader->Load(file,w,h))!=NULL)
+		if ((data=texLoader->Load(file,w,h,channel))!=NULL)
 		{
-			CTexture *texObj=LoadTextureMemory(data,w,h,EPModeRGB,nonPowerOf2);
+			CTexture *texObj=LoadTextureMemory(data,w,h,channel,nonPowerOf2);
 			texLoader->DestroyData(data);
 			return(texObj);
 		}

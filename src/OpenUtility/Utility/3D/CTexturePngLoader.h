@@ -11,7 +11,7 @@ class CTexturePngLoader : public CTexture::CTextureLoader
 public:
 	CTexturePngLoader() {}
 	virtual ~CTexturePngLoader() {}
-	unsigned char* Load(const char *file,unsigned long &w,unsigned long &h);
+	unsigned char* Load(const char *file,unsigned long &w,unsigned long &h,CTexture::EPicMode &channel);
 	void DestroyData(unsigned char *data);
 	bool IsCapable(const char *ext);
 

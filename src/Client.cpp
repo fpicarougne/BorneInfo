@@ -48,8 +48,8 @@ void Client::Init()
 		// Data to visualize
 		GL_CHECK();
 		Font40=new OpenUtility::CFontLoader("../content/verdana.ttf",40);
-//		TexQuad=new OpenUtility::CTextureQuad("../content/polytech.png",20,20);
-		TexQuad=new OpenUtility::CTextureQuad(Font40->GetFontTexture(),0.15,0.15);
+		TexQuad=new OpenUtility::CTextureQuad("../content/icones3.png",20,20);
+//		TexQuad=new OpenUtility::CTextureQuad(Font40->GetFontTexture(),0.15,0.15);
 		_3dText=new OpenUtility::C3DText(Font40);
 		_3dText->SetText("Bonjour, il est 14:12",OpenUtility::CFontLoader::CFontEngine::EHAlignCenter,OpenUtility::CFontLoader::CFontEngine::EVAlignBaseligne);
 		GL_CHECK();
@@ -110,8 +110,8 @@ void Client::Render()
 		TexQuad->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
 		TexQuad->Draw();
 
-		_3dText->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
-		_3dText->Draw();
+//		_3dText->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
+//		_3dText->Draw();
 		GL_CHECK();
 	}
 	catch(OpenUtility::CShaderProgram::Exception &e)

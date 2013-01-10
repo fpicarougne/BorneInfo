@@ -14,21 +14,6 @@ namespace OpenUtility
 class CTexture
 {
 public:
-	class CTextureLoader
-	{
-	public:
-		CTextureLoader() {}
-		virtual ~CTextureLoader() {}
-		virtual unsigned char* Load(const char *file,unsigned long &w,unsigned long &h)=0;
-		virtual void DestroyData(unsigned char *data)=0;
-		virtual bool IsCapable(const char *ext)=0;
-		static bool IsCapable(const char *ext,const char *verif);
-
-	protected:
-		CTextureLoader(const CTextureLoader &obj) {}
-		CTextureLoader& operator=(const CTextureLoader &obj) {return *this;}
-	};
-
 	enum EPicMode
 	{
 		EPModeA,
@@ -36,6 +21,21 @@ public:
 		EPModeGA,
 		EPModeRGB,
 		EPModeRGBA
+	};
+
+	class CTextureLoader
+	{
+	public:
+		CTextureLoader() {}
+		virtual ~CTextureLoader() {}
+		virtual unsigned char* Load(const char *file,unsigned long &w,unsigned long &h,CTexture::EPicMode &channel)=0;
+		virtual void DestroyData(unsigned char *data)=0;
+		virtual bool IsCapable(const char *ext)=0;
+		static bool IsCapable(const char *ext,const char *verif);
+
+	protected:
+		CTextureLoader(const CTextureLoader &obj) {}
+		CTextureLoader& operator=(const CTextureLoader &obj) {return *this;}
 	};
 
 public:
