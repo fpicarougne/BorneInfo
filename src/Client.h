@@ -3,10 +3,12 @@
 	#define _Client_h
 
 #include "GlWindow.h"
+#include "OpenUtility/Utility/3D/CTextureMultiQuad.h"
 #include <time.h>
 #include <Utility/3D/CShaderProgram.h>
 #include <Utility/3D/CTexture.h>
 #include <Utility/3D/CTextureQuad.h>
+#include <Utility/3D/CTextureMultiQuad.h>
 #include <Utility/3D/C3DText.h>
 
 class Client : protected GlWindow
@@ -75,9 +77,10 @@ private:
 	GLuint VBOtex;
 	unsigned int nbIndexes;
 	SShaders *Shaders;
-        OpenUtility::CFontLoader *Font40;
+	OpenUtility::CFontLoader *Font40;
 	OpenUtility::CTextureQuad *TexQuad;
-    OpenUtility::C3DText *_3dText;
+	OpenUtility::CTextureMultiQuad *TexMultiQuad;
+	OpenUtility::C3DText *_3dText;
 };
 
 #endif

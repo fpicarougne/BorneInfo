@@ -29,6 +29,7 @@ public:
 	void Draw();
 
 private:
+    void CommonInit();
 	void SetVertex(SVertex &vertex,double posX,double posY,double texX,double texY);
 
 private:

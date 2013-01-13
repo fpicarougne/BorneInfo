@@ -4,17 +4,25 @@ OpenUtility::C3DText::C3DText(const OpenUtility::CFontLoader *loader) :
 	CFontLoader::CFontEngine(loader),
 	VertexTab(NULL)
 {
+	CommonInit();
 }
 
 OpenUtility::C3DText::C3DText(const C3DText &obj) :
 	CFontLoader::CFontEngine(obj),
 	VertexTab(NULL)
 {
+	CommonInit();
 	SetText(obj.Text,obj.CurrentHAlign,obj.CurrentVAlign);
+}
+
+void OpenUtility::C3DText::CommonInit()
+{
+	glGenBuffers(1,&VBObuffer);
 }
 
 OpenUtility::C3DText::~C3DText()
 {
+	glDeleteBuffers(1,&VBObuffer);
 	delete[] VertexTab;
 }
 
@@ -88,7 +96,6 @@ void OpenUtility::C3DText::UpdateText(const char *text)
 								(fontData->texX+fontData->texW)/double(texture->GetWT()),fontData->texY/double(texture->GetHT()));
 	}
 
-	glGenBuffers(1,&VBObuffer);
 	glBindBuffer(GL_ARRAY_BUFFER,VBObuffer);
 	glBufferData(GL_ARRAY_BUFFER,sizeof(SVertex)*4*Text.GetSize(),VertexTab,GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER,0);

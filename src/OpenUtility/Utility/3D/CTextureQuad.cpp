@@ -36,6 +36,7 @@ OpenUtility::CTextureQuad::~CTextureQuad()
 {
 	if (HasAllocatedTex)
 		delete Texture;
+	glDeleteBuffers(1,&VBObuffer);
 }
 
 void OpenUtility::CTextureQuad::CalcSize(double maxW,double maxH)

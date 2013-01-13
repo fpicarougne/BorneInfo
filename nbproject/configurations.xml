@@ -289,6 +289,8 @@
               <in>CShaderProgram.h</in>
               <in>CTexture.cpp</in>
               <in>CTexture.h</in>
+              <in>CTextureMultiQuad.cpp</in>
+              <in>CTextureMultiQuad.h</in>
               <in>CTexturePngLoader.cpp</in>
               <in>CTexturePngLoader.h</in>
               <in>CTextureQuad.cpp</in>
@@ -298,8 +300,6 @@
             <df name="FileSystem">
               <in>FileHandling.cpp</in>
               <in>FileHandling.h</in>
-            </df>
-            <df name="Filesystem">
             </df>
             <df name="Math">
               <in>CBezierCurve.cpp</in>
