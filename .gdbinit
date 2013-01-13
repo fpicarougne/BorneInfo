@@ -1,1 +1,1 @@
-set prin ele 50
+set print elements 150
