@@ -2,14 +2,16 @@
 
 OpenUtility::C3DText::C3DText(const OpenUtility::CFontLoader *loader) :
 	CFontLoader::CFontEngine(loader),
-	VertexTab(NULL)
+	VertexTab(NULL),
+	ElementTab(NULL)
 {
 	CommonInit();
 }
 
 OpenUtility::C3DText::C3DText(const C3DText &obj) :
 	CFontLoader::CFontEngine(obj),
-	VertexTab(NULL)
+	VertexTab(NULL),
+	ElementTab(NULL)
 {
 	CommonInit();
 	SetText(obj.Text,obj.CurrentHAlign,obj.CurrentVAlign);
@@ -18,12 +20,17 @@ OpenUtility::C3DText::C3DText(const C3DText &obj) :
 void OpenUtility::C3DText::CommonInit()
 {
 	glGenBuffers(1,&VBObuffer);
+	glGenBuffers(1,&VBIBuffer);
+	CurrentHAlign=EHAlignLeft;
+	CurrentVAlign=EVAlignBaseligne;
 }
 
 OpenUtility::C3DText::~C3DText()
 {
 	glDeleteBuffers(1,&VBObuffer);
+	glDeleteBuffers(1,&VBIBuffer);
 	delete[] VertexTab;
+	delete[] ElementTab;
 }
 
 OpenUtility::C3DText& OpenUtility::C3DText::operator=(const C3DText &obj)
@@ -47,7 +54,9 @@ void OpenUtility::C3DText::UpdateText(const char *text)
 
 	Text=text;
 	delete[] VertexTab;
+	delete[] ElementTab;
 	VertexTab=new SVertex[Text.GetSize()*4];
+	ElementTab=new GLubyte[Text.GetSize()*6];
 
 	TotalX=0;
 	MinY=0;
@@ -94,11 +103,20 @@ void OpenUtility::C3DText::UpdateText(const char *text)
 								fontData->texX/double(texture->GetWT()),fontData->texY/double(texture->GetHT()));
 		SetVertex(VertexTab[i*4+3],x+fontData->texW/size,y+fontData->texH/size,
 								(fontData->texX+fontData->texW)/double(texture->GetWT()),fontData->texY/double(texture->GetHT()));
+
+		ElementTab[i*6]=i*4;
+		ElementTab[i*6+1]=ElementTab[i*6+4]=i*4+1;
+		ElementTab[i*6+2]=ElementTab[i*6+3]=i*4+2;
+		ElementTab[i*6+5]=i*4+3;
 	}
 
 	glBindBuffer(GL_ARRAY_BUFFER,VBObuffer);
 	glBufferData(GL_ARRAY_BUFFER,sizeof(SVertex)*4*Text.GetSize(),VertexTab,GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER,0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,VBIBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER,sizeof(GLubyte)*6*Text.GetSize(),ElementTab, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
 }
 
 void OpenUtility::C3DText::SetAlignement(EHAlign hAlign,EVAlign vAlign)
@@ -132,7 +150,6 @@ void OpenUtility::C3DText::SetAlignement(EHAlign hAlign,EVAlign vAlign)
 				VertexTab[i].position[0]+=x1;
 
 			isUpdated=true;
-			CurrentHAlign=hAlign;
 		}
 
 		if (CurrentVAlign!=vAlign)
@@ -162,7 +179,6 @@ void OpenUtility::C3DText::SetAlignement(EHAlign hAlign,EVAlign vAlign)
 				VertexTab[i].position[1]+=y1;
 
 			isUpdated=true;
-			CurrentVAlign=vAlign;
 		}
 
 		if (isUpdated)
@@ -172,6 +188,9 @@ void OpenUtility::C3DText::SetAlignement(EHAlign hAlign,EVAlign vAlign)
 			glBindBuffer(GL_ARRAY_BUFFER,0);
 		}
 	}
+
+	CurrentHAlign=hAlign;
+	CurrentVAlign=vAlign;
 }
 
 void OpenUtility::C3DText::AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex)
@@ -188,8 +207,9 @@ void OpenUtility::C3DText::AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vT
 
 void OpenUtility::C3DText::Draw()
 {
-	for (unsigned int i=0;i<Text.GetSize();i++)
-		glDrawArrays(GL_TRIANGLE_STRIP,i*4,4);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,VBIBuffer);
+	glDrawElements(GL_TRIANGLES,6*Text.GetSize(),GL_UNSIGNED_BYTE,(GLvoid*)0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
 }
 
 void OpenUtility::C3DText::SetVertex(SVertex &vertex,double posX,double posY,double texX,double texY)

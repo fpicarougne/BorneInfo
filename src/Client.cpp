@@ -48,7 +48,7 @@ void Client::Init()
 
 		// Data to visualize
 		GL_CHECK();
-		Font40=new OpenUtility::CFontLoader("../content/verdana.ttf",40);
+		Font40=new OpenUtility::CFontLoader("../content/verdana.ttf",70);
 		TexQuad=new OpenUtility::CTextureQuad("../content/icones3.png",20,20);
 		OpenUtility::CVector<OpenUtility::CTextureMultiQuad::SQuad> vect;
 		vect.Add(new OpenUtility::CTextureMultiQuad::SQuad(0,0,100,100,5,5));
@@ -57,7 +57,8 @@ void Client::Init()
 		vect.DeleteAll();
 //		TexQuad=new OpenUtility::CTextureQuad(Font40->GetFontTexture(),0.15,0.15);
 		_3dText=new OpenUtility::C3DText(Font40);
-		_3dText->SetText("Bonjour, il est 14:12",OpenUtility::CFontLoader::CFontEngine::EHAlignCenter,OpenUtility::CFontLoader::CFontEngine::EVAlignBaseligne);
+		_3dText->SetAlignement(OpenUtility::CFontLoader::CFontEngine::EHAlignCenter,OpenUtility::CFontLoader::CFontEngine::EVAlignBaseligne);
+//		_3dText->SetText("Bonjour, il est 14:12",OpenUtility::CFontLoader::CFontEngine::EHAlignCenter,OpenUtility::CFontLoader::CFontEngine::EVAlignBaseligne);
 		GL_CHECK();
 
 		// Matrix operations
@@ -94,6 +95,21 @@ void Client::Uninit()
 void Client::PreRender()
 {
 	struct timespec curTime;
+	struct tm *timeTM;
+	time_t timeStamp;
+	static time_t savTimeStamp=0;
+
+	timeStamp=time(NULL);
+	if (savTimeStamp!=timeStamp)
+	{
+		savTimeStamp=timeStamp;
+		timeTM=localtime(&timeStamp);
+		OpenUtility::CStream strTime;
+
+		strTime.Format("%02d:%02d:%02d",timeTM->tm_hour,timeTM->tm_min,timeTM->tm_sec);
+		_3dText->UpdateText(strTime);
+	}
+
 	clock_gettime(CLOCK_MONOTONIC,&curTime);
 
 	curTime=DiffTime(_debTime,curTime);
@@ -116,11 +132,11 @@ void Client::Render()
 //		TexQuad->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
 //		TexQuad->Draw();
 
-		TexMultiQuad->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
-		TexMultiQuad->Draw(1);
+//		TexMultiQuad->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
+//		TexMultiQuad->Draw(1);
 
-//		_3dText->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
-//		_3dText->Draw();
+		_3dText->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
+		_3dText->Draw();
 		GL_CHECK();
 	}
 	catch(OpenUtility::CShaderProgram::Exception &e)

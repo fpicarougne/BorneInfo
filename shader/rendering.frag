@@ -17,5 +17,6 @@ void main()
 //	vec3 calcColor = vec3(0.2,0.2,0.2) + u_LightColor * intensity;
 //	gl_FragColor = vec4(texColor.rgb * calcColor, texColor.a);
 //	gl_FragColor = v_Color;
-	gl_FragColor = texColor;
+	if (texColor.r<0.01) discard;
+	gl_FragColor = vec4(1.0,1.0,1.0,texColor.r);
 }

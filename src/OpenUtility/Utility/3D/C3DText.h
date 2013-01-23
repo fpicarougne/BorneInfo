@@ -23,7 +23,7 @@ public:
 	~C3DText();
 	C3DText& operator=(const C3DText &obj);
 	void SetText(const char *text,EHAlign hAlign=EHAlignLeft,EVAlign vAlign=EVAlignBaseligne);
-        void UpdateText(const char *text);
+	void UpdateText(const char *text);
 	void SetAlignement(EHAlign hAlign=EHAlignLeft,EVAlign vAlign=EVAlignBaseligne);
     void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex);
 	void Draw();
@@ -37,7 +37,9 @@ private:
     EHAlign CurrentHAlign;
     EVAlign CurrentVAlign;
     SVertex *VertexTab;
+	GLubyte *ElementTab;
     GLuint VBObuffer;
+	GLuint VBIBuffer;
     int TotalX,MinY,MaxY;
 };
 
