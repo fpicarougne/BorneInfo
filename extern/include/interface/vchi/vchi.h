@@ -41,6 +41,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  Global defs
  *****************************************************************************/
 
+#define VCHI_SERVICE_HANDLE_INVALID 0
+
 #define VCHI_BULK_ROUND_UP(x)     ((((unsigned long)(x))+VCHI_BULK_ALIGN-1) & ~(VCHI_BULK_ALIGN-1))
 #define VCHI_BULK_ROUND_DOWN(x)   (((unsigned long)(x)) & ~(VCHI_BULK_ALIGN-1))
 #define VCHI_BULK_ALIGN_NBYTES(x) (VCHI_BULK_ALIGNED(x) ? 0 : (VCHI_BULK_ALIGN - ((unsigned long)(x) & (VCHI_BULK_ALIGN-1))))
@@ -138,7 +140,7 @@ typedef struct {
 typedef struct opaque_vchi_instance_handle_t *VCHI_INSTANCE_T;
 
 // Opaque handle for a server or client
-typedef struct opaque_vchi_service_handle_t *VCHI_SERVICE_HANDLE_T;
+typedef unsigned int VCHI_SERVICE_HANDLE_T;
 
 // Service registration & startup
 typedef void (*VCHI_SERVICE_INIT)(VCHI_INSTANCE_T initialise_instance, VCHI_CONNECTION_T **connections, uint32_t num_connections);
@@ -199,6 +201,9 @@ extern int32_t vchi_service_destroy( const VCHI_SERVICE_HANDLE_T handle );
 extern int32_t vchi_service_open( VCHI_INSTANCE_T instance_handle,
                                   SERVICE_CREATION_T *setup,
                                   VCHI_SERVICE_HANDLE_T *handle);
+
+extern int32_t vchi_get_peer_version( const VCHI_SERVICE_HANDLE_T handle,
+                                      short *peer_version );
 
 // Routine to close a named service
 extern int32_t vchi_service_close( const VCHI_SERVICE_HANDLE_T handle );

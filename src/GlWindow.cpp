@@ -15,6 +15,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include "borne.h"
+#include "bcm_host.h"
 
 const char DirEventFile[]="/dev/input/by-path/";
 
