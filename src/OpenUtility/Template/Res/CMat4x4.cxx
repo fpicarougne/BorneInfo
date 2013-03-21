@@ -150,6 +150,16 @@ OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::Invert()
 }
 
 template<class T>
+OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::SetOrtho(T left,T right,T bottom,T top,T zNear,T zFar)
+{
+	Set(2/(right-left),0,0,0,
+		0,2/(top-bottom),0,0,
+		0,0,-2/(zFar-zNear),0,
+		-(right+left)/(right-left),-(top+bottom)/(top-bottom),-(zFar+zNear)/(zFar-zNear),1);
+	return(*this);
+}
+
+template<class T>
 OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::SetFrustum(T left,T right,T bottom,T top,T zNear,T zFar)
 {
 	Set(2*zNear/(right-left),0,0,0,

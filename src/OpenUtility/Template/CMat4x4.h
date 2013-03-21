@@ -105,6 +105,7 @@ public:
 	CMat4x4<T>& Invert();
 
 	// 3D operations
+	CMat4x4<T>& SetOrtho(T left,T right,T bottom,T top,T nearVal,T farVal);
 	CMat4x4<T>& SetFrustum(T left,T right,T bottom,T top,T nearVal,T farVal);
 	CMat4x4<T>& SetLookAt(T eyeX,T eyeY,T eyeZ,T centerX,T centerY,T centerZ,T upX,T upY,T upZ);
 	CMat4x4<T>& SetTranslate(T tx,T ty,T tz);

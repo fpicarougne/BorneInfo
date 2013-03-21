@@ -15,8 +15,10 @@ public:
 	CTable(unsigned int size=DEF_SIZE_Table);
 	~CTable();
 	inline void SetGrowSize(unsigned int size) {IncBlock=size;}
-	void Init(T &Obj,unsigned int nb);
-	T& Add(T &Obj);
+	void Init(T obj,unsigned int nb);
+	T& Add(T obj);
+	inline T& Push(T obj) {return(Add(obj));}
+	T Pop();
 	void Delete(unsigned int nb);
 	void DeleteAll();
 	inline unsigned int GetSize() {return(Taille);}

@@ -2,6 +2,7 @@
 #include "Client.h"
 #include <iostream>
 #include <Template/CMat4x4.h>
+#include <stddef.h>
 
 Client::Client() :
 	nbIndexes(0),
@@ -11,10 +12,12 @@ Client::Client() :
 	TexMultiQuad(NULL),
 	_3dText(NULL)
 {
+	MutexMouse=OpenUtility::InitMutex();
 }
 
 Client::~Client()
 {
+	OpenUtility::DestroyMutex(MutexMouse);
 	delete(Shaders);
 }
 
@@ -36,8 +39,6 @@ void Client::Init()
 			std::cout << "-----------------------------------\nErreur fragment shader :\n" << Shaders->ShaderFragment.GetLog() << std::endl << "--------------------------" << std::endl;
 		if (!Shaders->RenderingShader.LinkProgram())
 			std::cout << "-----------------------------------\nErreur shader program :\n" << Shaders->RenderingShader.GetLog() << std::endl << "--------------------------" << std::endl;
-
-		Shaders->RenderingShader.UseProgram();
 
 		// Set background color and clear buffers
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -62,16 +63,15 @@ void Client::Init()
 		GL_CHECK();
 
 		// Matrix operations
-		OpenUtility::CMat4x4<float> MVmatrix,Pmatrix,MVPmatrix;
+		OpenUtility::CMat4x4<float> MVmatrix,Pmatrix;
 		float factor=1;
 
 //		MVmatrix*=OpenUtility::CMat4x4<float>().SetLookAt(0,2,3,0,0,0,0,1,0);
 		MVmatrix*=(OpenUtility::CMat4x4<float>()).SetLookAt(0,0,1.2,0,0,0,0,1,0);
 		Pmatrix.SetFrustum(-factor,factor,-factor*GetHeight()/float(GetWidth()),factor*GetHeight()/float(GetWidth()),0.1f,1000);
-		glUniformMatrix4fv(Shaders->RenderingShader["u_Nmatrix"],1,GL_FALSE,MVmatrix.GetMatrix());
-		GL_CHECK();
-		glUniformMatrix4fv(Shaders->RenderingShader["u_MVPmatrix"],1,GL_FALSE,(Pmatrix*MVmatrix).GetMatrix());
-		GL_CHECK();
+
+		Nmatrix=MVmatrix;
+		MVPmatrix=Pmatrix*MVmatrix;
 
 		glViewport(0,0,GetWidth(),GetHeight());
 		GL_CHECK();
@@ -84,6 +84,7 @@ void Client::Init()
 
 void Client::Uninit()
 {
+	TabMice.DeleteAll();
 	delete TexQuad;
 	delete _3dText;
 	delete Font40;
@@ -117,6 +118,31 @@ void Client::PreRender()
 	{
 //		CloseWindow();
 	}
+
+	OpenUtility::MutexLock(MutexMouse);
+	for (unsigned int i=0;i<TabIdMice.GetSize();i++)
+	{
+		int id=TabIdMice[i];
+		unsigned int _id;
+		if (id>0)
+		{
+			_id=id;
+			while (TabMice.GetSize()<_id+1) TabMice.Add(NULL);
+			if (TabMice[_id]) delete TabMice[_id];
+			(TabMice[_id]=new CMouse(GetWidth(),GetHeight()))->SetPixelPosition(0,0);
+		}
+		else
+		{
+			_id=-id;
+			if ((TabMice.GetSize()>_id) && TabMice[_id])
+			{
+				delete TabMice[_id];
+				TabMice[_id]=NULL;
+			}
+		}
+	}
+	TabIdMice.DeleteAll();
+	OpenUtility::MutexUnlock(MutexMouse);
 }
 
 void Client::Render()
@@ -125,6 +151,12 @@ void Client::Render()
 	{
 		glClearColor(0.0f, 0.4f, 0.5f, 0.5f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		Shaders->RenderingShader.UseProgram();
+
+		glUniformMatrix4fv(Shaders->RenderingShader["u_Nmatrix"],1,GL_FALSE,Nmatrix.GetMatrix());
+		glUniformMatrix4fv(Shaders->RenderingShader["u_MVPmatrix"],1,GL_FALSE,MVPmatrix.GetMatrix());
+		GL_CHECK();
 
 		glActiveTexture(GL_TEXTURE0);
 		glUniform1i(Shaders->RenderingShader["u_texId"],0);
@@ -137,6 +169,10 @@ void Client::Render()
 
 		_3dText->AttachAttribToData(Shaders->RenderingShader["vPos"],Shaders->RenderingShader["vNorm"],Shaders->RenderingShader["vTexCoord"]);
 		_3dText->Draw();
+		GL_CHECK();
+
+		for (unsigned int i=0;i<TabMice.GetSize();i++)
+			if (TabMice[i]) TabMice[i]->Draw();
 		GL_CHECK();
 	}
 	catch(OpenUtility::CShaderProgram::Exception &e)
@@ -177,16 +213,33 @@ void Client::OnKeyUp(unsigned int id,int keyCode)
 void Client::OnPeripheralAdd(unsigned int id,const char *name,EPeriphType type)
 {
 	std::cout << "Nouveau périphérique (id=" << id << " type=" << GlWindow::GetPeripheralTypeName(type) << ") : " << name << std::endl;
+
+	if (type==EPTmouse || type==EPTunknown)
+	{
+		if (!HasLimit(id,AXE_X)) SetAxeLimit(id,AXE_X,0,GetWidth());
+		if (!HasLimit(id,AXE_Y)) SetAxeLimit(id,AXE_Y,0,GetHeight());
+		SetAxeRemap(id,AXE_X,0,1);
+		SetAxeRemap(id,AXE_Y,0,1);
+
+		OpenUtility::MutexLock(MutexMouse);
+		TabIdMice.Push(int(id));
+		OpenUtility::MutexUnlock(MutexMouse);
+	}
 }
 
 void Client::OnPeripheralRemove(unsigned int id,const char *name)
 {
 	std::cout << "Déconnexion de (id=" << id << ") : " << name << std::endl;
+
+	OpenUtility::MutexLock(MutexMouse);
+	TabIdMice.Push(-int(id));
+	OpenUtility::MutexUnlock(MutexMouse);
 }
 
 void Client::OnMouseMove(unsigned int id,double x,double y)
 {
-	std::cout << "Mouse (id #" << id << ") move : x=" << x << " ; y=" << y << std::endl;
+//	std::cout << "Mouse (id #" << id << ") move : x=" << x << " ; y=" << y << std::endl;
+	if ((TabMice.GetSize()>id) && TabMice[id]) TabMice[id]->SetRelativePosition(x,y);
 }
 
 void Client::On6axisChange(unsigned int id,double x,double y,double z,double rx,double ry,double rz)
@@ -211,7 +264,22 @@ void Client::OnTiltChange(unsigned int id,double x,double y)
 
 void Client::OnAxeChange(unsigned int id,GlWindow::EPeriphAxe axe,double val)
 {
-	std::cout << "Axe (id #" << id << ") axe " << GlWindow::GetAxeName(axe) << " : val=" << val << std::endl;
+//	std::cout << "Axe (id #" << id << ") axe " << GlWindow::GetAxeName(axe) << " : val=" << val << std::endl;
+	if (axe==AXE_X || axe==AXE_Y)
+	{
+		double x,y;
+		if (axe==AXE_X)
+		{
+			x=val;
+			y=GetAxeValue(id,AXE_Y);
+		}
+		else
+		{
+			x=GetAxeValue(id,AXE_X);
+			y=val;
+		}
+		if ((TabMice.GetSize()>id) && TabMice[id]) TabMice[id]->SetRelativePosition(x,y);
+	}
 }
 
 void Client::OnMouseButtonDown(unsigned int id,int b,double x,double y)

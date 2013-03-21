@@ -10,6 +10,8 @@
 #include <Utility/3D/CTextureQuad.h>
 #include <Utility/3D/CTextureMultiQuad.h>
 #include <Utility/3D/C3DText.h>
+#include <Template/CVector.h>
+#include "Mouse.h"
 
 class Client : protected GlWindow
 {
@@ -77,10 +79,14 @@ private:
 	GLuint VBOtex;
 	unsigned int nbIndexes;
 	SShaders *Shaders;
+	OpenUtility::CMat4x4<float> MVPmatrix,Nmatrix;
 	OpenUtility::CFontLoader *Font40;
 	OpenUtility::CTextureQuad *TexQuad;
 	OpenUtility::CTextureMultiQuad *TexMultiQuad;
 	OpenUtility::C3DText *_3dText;
+	MUTEX MutexMouse;
+	OpenUtility::CTable<int> TabIdMice;
+	OpenUtility::CVector<CMouse> TabMice;
 };
 
 #endif

@@ -387,7 +387,9 @@ bool GlWindow::AddPeripheral(char *file)
 	if ((periph=SPeripheral::GenPeripheral(buffer))==NULL) return(false);
 
 	ListPeriph.Add(periph);
+	OpenUtility::MutexUnlock(_mutexEnd);
 	OnPeripheralAdd(periph->GetId(),periph->GetName(),periph->GetType());
+	OpenUtility::MutexLock(_mutexEnd);
 
 	return(true);
 }
@@ -395,7 +397,9 @@ bool GlWindow::AddPeripheral(char *file)
 bool GlWindow::RemovePeripheral(OpenUtility::CListe<SPeripheral>::CListeIterator &pos)
 {
 	SPeripheral* periph=ListPeriph.Remove(pos);
+	OpenUtility::MutexUnlock(_mutexEnd);
 	OnPeripheralRemove(periph->GetId(),periph->GetName());
+	OpenUtility::MutexLock(_mutexEnd);
 	delete periph;
 
 	return(true);
@@ -430,7 +434,7 @@ void GlWindow::ReadEvent(SPeripheral *periph)
 					case 0:
 						if ((val>=BTN_MOUSE) && (val<BTN_JOYSTICK))
 						{
-							int x=0,y=0;
+							double x=0,y=0;
 							if (periph->GetAxes())
 							{
 								if (TEST_BIT(AXE_X,periph->GetAxes()->AxeMap)) x=periph->GetAxes()->AxeValues[AXE_X].GetValue();
@@ -700,6 +704,43 @@ void GlWindow::MainLoop()
 	_CloseWindow();
 }
 
+double GlWindow::GetAxeValue(unsigned int id,EPeriphAxe axe)
+{
+	SPeripheral *periph;
+
+	double val=0;
+	OpenUtility::MutexLock(_mutexEnd);
+	if ((periph=SPeripheral::GetPeripheral(id))!=NULL)
+	{
+		if (periph->GetAxes() && TEST_BIT(axe,periph->GetAxes()->AxeMap))
+			val=periph->GetAxes()->AxeValues[axe].GetValue();
+	}
+	OpenUtility::MutexUnlock(_mutexEnd);
+	return(val);
+}
+
+bool GlWindow::HasLimit(unsigned int id,EPeriphAxe axe,int *min,int *max)
+{
+	SPeripheral *periph;
+
+	bool limit=false;
+	OpenUtility::MutexLock(_mutexEnd);
+	if ((periph=SPeripheral::GetPeripheral(id))!=NULL)
+	{
+		if (periph->GetAxes() && TEST_BIT(axe,periph->GetAxes()->AxeMap))
+		{
+			int _min,_max;
+			periph->GetAxes()->AxeValues[axe].GetMargin(_min,_max);
+			if (min) *min=_min;
+			if (max) *max=_max;
+std::cout<<"min: "<<_min<<" ; max: "<<_max<<std::endl;
+			limit=_min!=_max;
+		}
+	}
+	OpenUtility::MutexUnlock(_mutexEnd);
+	return(limit);
+}
+
 void GlWindow::SetAxeLimit(unsigned int id,EPeriphAxe axe,int min,int max)
 {
 	SPeripheral *periph;
@@ -713,7 +754,7 @@ void GlWindow::SetAxeLimit(unsigned int id,EPeriphAxe axe,int min,int max)
 	OpenUtility::MutexUnlock(_mutexEnd);
 }
 
-void GlWindow::SetAxeRemap(unsigned int id,EPeriphAxe axe,int min,int max)
+void GlWindow::SetAxeRemap(unsigned int id,EPeriphAxe axe,double min,double max)
 {
 	SPeripheral *periph;
 
@@ -990,7 +1031,7 @@ GlWindow::SPeripheral* GlWindow::SPeripheral::GenPeripheral(const char *file)
 
 GlWindow::SPeripheral* GlWindow::SPeripheral::GetPeripheral(unsigned int id)
 {
-	if (_TabPeriph.GetSize()<id) return(_TabPeriph[id]);
+	if (_TabPeriph.GetSize()>id) return(_TabPeriph[id]);
 	return(NULL);
 }
 
@@ -1174,6 +1215,6 @@ void GlWindow::SAxeParam::CheckValue()
 
 double GlWindow::SAxeParam::GetValue()
 {
-	if (remap) return((value-min)/(max-min)*(maxR-minR)+minR);
+	if (remap) return((value-min)/double(max-min)*(maxR-minR)+minR);
 	return(value);
 }

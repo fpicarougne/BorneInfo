@@ -14,7 +14,7 @@ template <class T> OpenUtility::CTable<T>::~CTable()
 	MyFree(Table);
 }
 
-template <class T> void OpenUtility::CTable<T>::Init(T &Obj,unsigned int nb)
+template <class T> void OpenUtility::CTable<T>::Init(T obj,unsigned int nb)
 {
 	unsigned int size,i;
 
@@ -25,10 +25,10 @@ template <class T> void OpenUtility::CTable<T>::Init(T &Obj,unsigned int nb)
 		SetSize();
 	}
 	Taille=nb;
-	for (i=0;i<nb;i++) Table[i]=Obj;
+	for (i=0;i<nb;i++) Table[i]=obj;
 }
 
-template <class T> T& OpenUtility::CTable<T>::Add(T &Obj)
+template <class T> T& OpenUtility::CTable<T>::Add(T obj)
 {
 	if (Taille+1>TailleBlock)
 	{
@@ -42,8 +42,20 @@ template <class T> T& OpenUtility::CTable<T>::Add(T &Obj)
 		}
 		SetSize();
 	}
-	Table[Taille++]=Obj;
+	Table[Taille++]=obj;
 	return(Table[Taille-1]);
+}
+
+template <class T> T OpenUtility::CTable<T>::Pop()
+{
+	if (Taille==0)
+	{
+		GetCMyExceptionObj(E,ERR_ARGUMENT);
+		throw(E);
+	}
+	T obj=Table[Taille-1];
+	Delete(1);
+	return(obj);
 }
 
 template <class T> void OpenUtility::CTable<T>::Delete(unsigned int nb)

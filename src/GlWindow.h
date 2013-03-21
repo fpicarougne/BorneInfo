@@ -100,8 +100,9 @@ private:
 	class SAxeParam
 	{
 	public:
-		SAxeParam(int _min=0,int _max=0) : IsSetToZero(false),min(_min),max(_max),remap(false),value(_min) {if (min>max){int t=min;min=max;max=t;}}
-		inline double SetMargin(double _min=0,double _max=0) {min=_min;max=_max;if (min>max){int t=min;min=max;max=t;}return(GetValue());}
+		SAxeParam(int _min=0,int _max=0) : IsSetToZero(false),min(_min),max(_max),remap(false) {if (min>max){int t=min;min=max;max=t;};value=min;}
+		inline double SetMargin(int _min=0,int _max=0) {min=_min;max=_max;if (min>max){int t=min;min=max;max=t;}return(GetValue());}
+		inline void GetMargin(int &_min,int &_max) {_min=min;_max=max;}
 		inline double SetRemap(double _min=0,double _max=1) {remap=true;minR=_min;maxR=_max;if (minR>maxR){int t=minR;minR=maxR;maxR=t;}return(GetValue());}
 		inline void UnsetRemap() {remap=false;}
 		inline double SetValue(int _value) {value=_value;CheckValue();return(GetValue());}
@@ -208,8 +209,10 @@ protected:
 	virtual void OnGamepadButtonDown(unsigned int id,int b) {}
 	virtual void OnGamepadButtonUp(unsigned int id,int b) {}
 	// Peripheral management
+	double GetAxeValue(unsigned int id,EPeriphAxe axe);
+	bool HasLimit(unsigned int id,EPeriphAxe axe,int *min=NULL,int *max=NULL);
 	void SetAxeLimit(unsigned int id,EPeriphAxe axe,int min,int max);
-	void SetAxeRemap(unsigned int id,EPeriphAxe axe,int min,int max);
+	void SetAxeRemap(unsigned int id,EPeriphAxe axe,double min=0,double max=1);
 	void UnsetAxeRemap(unsigned int id,EPeriphAxe axe);
 	void SetMousePos(unsigned int id,int x,int y);
 	void Set6AxisPos(unsigned int id,int x,int y,int z,int rx,int ry,int rz);
