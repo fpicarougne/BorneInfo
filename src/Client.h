@@ -12,8 +12,10 @@
 #include <Utility/3D/C3DText.h>
 #include <Template/CVector.h>
 #include "Mouse.h"
+#include "Screens/TaskBar.h"
+#include "Screens/ScreenContact.h"
 
-class Client : protected GlWindow
+class Client : protected GlWindow, public IRenderingObjectComm
 {
 private:
 	struct SShaders
@@ -44,11 +46,14 @@ public:
 	Client();
 	virtual ~Client();
 	void Start();
+	inline const OpenUtility::SFrustum& GetFrustum() const {return(Frustum);}
+	inline const OpenUtility::SPivotd& GetCameraPos() const {return(CameraPos);}
+	inline const OpenUtility::CShaderProgram& GetGlobalShader() const {return(Shaders->RenderingShader);}
 
 protected:
 	void Init();
 	void Uninit();
-	void PreRender();
+	bool PreRender(unsigned long long timeUnit);
 	void Render();
 	void OnPeripheralAdd(unsigned int id,const char *name,EPeriphType type);
 	void OnPeripheralRemove(unsigned int id,const char *name);
@@ -70,23 +75,27 @@ protected:
 	void OnGamepadButtonUp(unsigned int id,int b);
 
 private:
-	timespec DiffTime(timespec start,timespec end);
-
-private:
-	struct timespec _debTime;
 	GLuint VBObuffer;
 	GLuint VBOindex;
 	GLuint VBOtex;
 	unsigned int nbIndexes;
 	SShaders *Shaders;
 	OpenUtility::CMat4x4<float> MVPmatrix,Nmatrix;
-	OpenUtility::CFontLoader *Font40;
 	OpenUtility::CTextureQuad *TexQuad;
 	OpenUtility::CTextureMultiQuad *TexMultiQuad;
-	OpenUtility::C3DText *_3dText;
 	MUTEX MutexMouse;
+	bool MouseHasMove;
 	OpenUtility::CTable<int> TabIdMice;
 	OpenUtility::CVector<CMouse> TabMice;
+	OpenUtility::SFrustum Frustum;
+	OpenUtility::SPivotd CameraPos;
+	OpenUtility::CMat4x4<float> MVmatrix,Pmatrix;
+	OpenUtility::CFontLoader *Font30;
+	OpenUtility::C3DText *FpsText;
+	CTaskBar *TaskBar;
+	OpenUtility::CVector<CScreen> TabScreen;
+	bool UpdateSpace;
+	bool DisplayFps;
 };
 
 #endif

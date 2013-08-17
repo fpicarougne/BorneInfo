@@ -1,6 +1,5 @@
 #include <math.h>
 #include <stdlib.h>
-#include "../../Utility/Memory.h"
 
 template<class T> OpenUtility::CListe<T>::CListe() :
 	Liste(NULL),
@@ -149,7 +148,7 @@ template<class T> T* OpenUtility::CListe<T>::AddDecrease(T* Obj,CListeIterator *
 template<class T> T* OpenUtility::CListe<T>::AddAfter(T *Obj,CListeIterator &posAfter,CListeIterator *pos)
 {
 	SCell *temp,*cell;
-	
+
 	if (posAfter.pos) cell=posAfter.pos;
 	else if (Liste) cell=Liste;
 	else return(NULL);
@@ -185,11 +184,7 @@ template<class T> T* OpenUtility::CListe<T>::Remove(unsigned int index)
 	int i;
 	bool sensGauche;
 
-	if (index>=Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (index>=Taille) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	if (index<Taille-index)
 	{
@@ -273,11 +268,7 @@ template<class T> T* OpenUtility::CListe<T>::Remove(CListeIterator &pos)
 	T *ObjRetour;
 
 	temp=pos.pos;
-	if (Taille<1)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (Taille<1) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	temp->prev->suiv=temp->suiv;
 	temp->suiv->prev=temp->prev;
@@ -314,11 +305,7 @@ template<class T> T* OpenUtility::CListe<T>::RemoveFirst()
 	SCell *temp;
 	T *ObjRetour;
 
-	if (Taille<1)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (Taille<1) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	Liste->prev->suiv=Liste->suiv;
 	Liste->suiv->prev=Liste->prev;
@@ -347,11 +334,7 @@ template<class T> T* OpenUtility::CListe<T>::RemoveLast()
 	T *ObjRetour;
 	SCell *temp;
 
-	if (Taille<1)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (Taille<1) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	temp=Liste->prev;
 
@@ -379,11 +362,7 @@ template<class T> void OpenUtility::CListe<T>::Delete(CListeIterator &pos)
 	SCell *temp;
 
 	temp=pos.pos;
-	if (Taille<1 || !temp)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (Taille<1 || !temp) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	temp->prev->suiv=temp->suiv;
 	temp->suiv->prev=temp->prev;
@@ -406,11 +385,7 @@ template<class T> void OpenUtility::CListe<T>::Delete(unsigned int index)
 	int i;
 	bool sensGauche;
 
-	if (index>=Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (index>=Taille) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	if (index<Taille-index)
 	{
@@ -511,11 +486,7 @@ template<class T> void OpenUtility::CListe<T>::DeleteFirst()
 {
 	SCell *temp;
 
-	if (Taille<1)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (Taille<1) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	Liste->prev->suiv=Liste->suiv;
 	Liste->suiv->prev=Liste->prev;
@@ -549,11 +520,7 @@ template<class T> void OpenUtility::CListe<T>::DeleteLast()
 {
 	SCell *temp;
 
-	if (Taille<1)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (Taille<1) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	temp=Liste->prev;
 
@@ -585,11 +552,7 @@ template<class T> T*& OpenUtility::CListe<T>::ElementAt(unsigned int index,CList
 	int i;
 	bool sensGauche;
 
-	if (index>=Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (index>=Taille) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	if (index<Taille-index)
 	{
@@ -651,11 +614,7 @@ template<class T> T* OpenUtility::CListe<T>::GetAt(unsigned int index,CListeIter
 	int i;
 	bool sensGauche;
 
-	if (index>=Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (index>=Taille) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	if (index<Taille-index)
 	{
@@ -710,11 +669,7 @@ template<class T> T* OpenUtility::CListe<T>::GetAt(unsigned int index,CListeIter
 
 template<class T> T* OpenUtility::CListe<T>::GetNextElmt(CListeIterator *pos)
 {
-	if (!Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (!Taille) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	if (pos)
 	{
@@ -727,11 +682,7 @@ template<class T> T* OpenUtility::CListe<T>::GetNextElmt(CListeIterator *pos)
 
 template<class T> T* OpenUtility::CListe<T>::GetPrevElmt(CListeIterator *pos)
 {
-	if (!Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (!Taille) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	if (pos)
 	{
@@ -740,6 +691,26 @@ template<class T> T* OpenUtility::CListe<T>::GetPrevElmt(CListeIterator *pos)
 		return(pos->pos->val);
 	}
 	return(Liste->val);
+}
+
+template<class T> T* OpenUtility::CListe<T>::GetFirst(CListeIterator *pos)
+{
+	if (Liste)
+	{
+		if (pos) pos->pos=Liste;
+		return(Liste->val);
+	}
+	return(NULL);
+}
+
+template<class T> T* OpenUtility::CListe<T>::GetLast(CListeIterator *pos)
+{
+	if (Liste)
+	{
+		if (pos) pos->pos=Liste->prev;
+		return(Liste->prev->val);
+	}
+	return(NULL);
 }
 
 template<class T> bool OpenUtility::CListe<T>::FindObj(T &ObjToFind,T** ObjFound,unsigned int *index)
@@ -792,11 +763,7 @@ template<class T> bool OpenUtility::CListe<T>::FindObj(T &ObjToFind)
 
 template<class T> void OpenUtility::CListe<T>::Loop()
 {
-	if (!Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (!Taille) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	if (Taille!=1)
 	{
@@ -811,6 +778,6 @@ template<class T> void OpenUtility::CListe<T>::CListeIterator::operator+=(int i)
 	if (pos)
 	{
 		if (i<0) for (;i!=0;i++) pos=pos->prev;
-		else  for (;i!=0;i--) pos=pos->suiv;
+		else for (;i!=0;i--) pos=pos->suiv;
 	}
 }

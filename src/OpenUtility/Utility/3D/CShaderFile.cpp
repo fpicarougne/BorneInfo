@@ -66,7 +66,7 @@ void OpenUtility::CShaderFile::Init()
 
 void OpenUtility::CShaderFile::InitCopy(const OpenUtility::CShaderFile &obj)
 {
-	LoadStream(obj.ShaderSource);
+	LoadStream(obj.ShaderSource.GetStream());
 }
 
 void OpenUtility::CShaderFile::SetState(OpenUtility::CShaderFile::EShaderState state)
@@ -95,7 +95,7 @@ bool OpenUtility::CShaderFile::LoadFile(const char *file)
 		if (count>0)
 		{
 			ShaderSource.AllocBuffer(count+1);
-			count=static_cast<long>(fread(ShaderSource,sizeof(char),count,fp));
+			count=static_cast<long>(fread(ShaderSource.GetStream(),sizeof(char),count,fp));
 			ShaderSource[count]='\0';
 
 			SetState(EShaderSourceModified);
@@ -127,7 +127,7 @@ bool OpenUtility::CShaderFile::CompileShader()
 	if (State==EShaderSourceModified)
 	{
 		GLint status;
-		char *csrc=ShaderSource;
+		char *csrc=ShaderSource.GetStream();
 
 		glShaderSource(idShader,1,const_cast<const GLchar**>(&csrc),NULL);
 check();
@@ -161,7 +161,7 @@ check();
 	if (infologLength>1)
 	{
 		CurLog.AllocBuffer(infologLength+1);
-		glGetShaderInfoLog(idShader,infologLength,&charsWritten,CurLog);
+		glGetShaderInfoLog(idShader,infologLength,&charsWritten,CurLog.GetStream());
 		CurLog[charsWritten]='\0';
 		return(true);
 	}

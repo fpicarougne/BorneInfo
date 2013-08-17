@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+namespace OpenUtility
+{
+
 XYf& XYf::operator+=(const XYf &v)
 {
 	this->x+=v.x;
@@ -859,19 +862,19 @@ unsigned int XYZd::Hash(const XYZd *p)
 	return CVector3(posX, posY, posZ);
 }*/
 
-OpenUtility::CStream& operator<<(OpenUtility::CStream &stream,const XYZf &vect)
+CStream& operator<<(CStream &stream,const XYZf &vect)
 {
 	stream.AddFormatStream("(%f;%f;%f)",vect.x,vect.y,vect.z);
 	return(stream);
 }
 
-OpenUtility::CStream& operator<<(OpenUtility::CStream &stream,const XYZd &vect)
+CStream& operator<<(CStream &stream,const XYZd &vect)
 {
 	stream.AddFormatStream("(%f;%f;%f)",vect.x,vect.y,vect.z);
 	return(stream);
 }
 
-OpenUtility::CStream& operator<<(OpenUtility::CStream &stream,const SPivotd &pivot)
+CStream& operator<<(CStream &stream,const SPivotd &pivot)
 {
 	stream << pivot.GetPos() << pivot.GetdView() << pivot.GetdNorm();
 	return(stream);
@@ -1188,4 +1191,6 @@ void Matrix44Mul31(XYZd *product,const double *a,const XYZd *b)
 
 #undef P
 #undef A
+}
+
 }

@@ -5,13 +5,19 @@
 	#define NULL 0
 #endif
 
-#include "CContenerInterface.h"
+#include "Interfaces/IContener.h"
+#include <typeinfo>
 
 namespace OpenUtility
 {
 
+#if defined(_MSC_VER)
+	#pragma warning(push)
+	#pragma warning(disable : 4101)
+#endif
+
 template <class T>
-class CListe : public CContenerInterface<T>
+class CListe : public IContener<T>
 {
 private:
 	struct SCell
@@ -22,14 +28,24 @@ private:
 	};
 
 public:
-	struct CListeIterator : public OpenUtility::Iterator<T>
+	struct CListeIterator : public Iterator<T>
 	{
 		friend class CListe<T>;
 		CListeIterator() : pos(NULL) {}
-		inline void operator++() {if (pos) pos=pos->suiv;}
+		inline void operator++(int) {if (pos) pos=pos->suiv;}
 		void operator+=(int i);
-		inline void operator--() {if (pos) pos=pos->prev;}
+		inline void operator--(int) {if (pos) pos=pos->prev;}
 		inline void operator-=(int i) {operator+=(-i);}
+		inline bool operator==(const Iterator<T> &obj)
+		{
+			try
+			{
+				const CListeIterator &ref=dynamic_cast<const CListeIterator&>(obj);
+				return(*this==ref);
+			}
+			catch(const std::bad_cast &e) {return(false);}
+		}
+		inline bool operator!=(const Iterator<T> &obj) {return(!(*this==obj));}
 		inline bool operator==(const CListeIterator &obj) {return(pos==obj.pos);}
 		inline bool operator!=(const CListeIterator &obj) {return(pos!=obj.pos);}
 		inline T* operator->() {return(pos ? pos->val : NULL);}
@@ -65,6 +81,8 @@ public:
 	void DeleteAll();
 	void Loop();
 	inline unsigned int GetSize() const {return(Taille);}
+	T* GetFirst(CListeIterator *pos=NULL);
+	T* GetLast(CListeIterator *pos=NULL);
 	T*& ElementAt(unsigned int index,CListeIterator *pos);	//Bon pour lvalue et rvalue
 	inline T*& ElementAt(unsigned int index) {return(ElementAt(index,NULL));};
 	inline T*& ElementAt(CListeIterator &pos) {return(pos.pos->val);}	//Bon pour lvalue et rvalue
@@ -80,13 +98,17 @@ public:
 	bool FindObj(T &ObjToFind,T** ObjFound,unsigned int *index);
 	bool FindObj(T &ObjToFind);
 
-
 private:
 	SCell *Liste;	// Le premier élément de la liste
 	unsigned long Taille;	// La taille de la liste
 	SCell *EnCours;
 	unsigned long PosEnCours;
 };
+
+#if defined(_MSC_VER)
+	#pragma warning(pop)
+#endif
+
 }
 
 #include "Res/CListe.cxx"

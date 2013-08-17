@@ -1,5 +1,5 @@
 #include "Socket.h"
-#include "../Memory.h"
+#include "../OUException.h"
 #ifndef WIN32
 	#include <unistd.h>
 	#include <netdb.h>
@@ -22,16 +22,14 @@ void OpenUtility::InitSocket()
 		int nResult=WSAStartup(wVersionRequested,&wsaData);
 		if (nResult!=0)
 		{
-			OpenUtility::CMyException E(ERR_BAD_INIT);
-			throw(E);
+			THROW(Exception,"Error in socket initialisation");
 		}
 		else
 		{
 			if (LOBYTE(wsaData.wVersion) != 1 || HIBYTE(wsaData.wVersion) != 1)
 			{
 				WSACleanup();
-				OpenUtility::CMyException E(ERR_BAD_INIT);
-				throw(E);
+				THROW(Exception,"Error in socket initialisation");
 			}
 		}
 	}

@@ -37,6 +37,7 @@ public:
 	{
 		EPTkeyboard,
 		EPTmouse,
+		EPTtouchscreen,
 		EPTjoystick,
 		EPT6axis,
 		EPTunknown
@@ -187,7 +188,7 @@ protected:
 	// OpenGL rendering
 	virtual void Init() {}
 	virtual void Uninit() {}
-	virtual void PreRender() {}
+	virtual bool PreRender(unsigned long long timeUnit) {return(true);}
 	virtual void Render() {}
 	// Event catcher
 	virtual void OnPeripheralAdd(unsigned int id,const char *name,GlWindow::EPeriphType type) {}
@@ -219,6 +220,7 @@ protected:
 	void SetMouseLimitToScreen(unsigned int id,bool enable=true);
 	// Tools
 	static const char* GetPeripheralTypeName(EPeriphType type);
+	timespec DiffTime(timespec start,timespec end);
 
 private:
 	GlWindow(const GlWindow &obj) {}
@@ -247,6 +249,7 @@ private:
 	EGLSurface Surface;
 	EGLContext Context;
 	// Event stuff
+	struct timespec _debTime;
 	MUTEX _mutexMouse;
 	OpenUtility::CListe<SPeripheral> ListPeriph;
 };

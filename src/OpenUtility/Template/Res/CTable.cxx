@@ -48,11 +48,7 @@ template <class T> T& OpenUtility::CTable<T>::Add(T obj)
 
 template <class T> T OpenUtility::CTable<T>::Pop()
 {
-	if (Taille==0)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (Taille==0) THROW(typename CTable<T>::Exception,CTable<T>::Exception::EErrOutOfBounds);
 	T obj=Table[Taille-1];
 	Delete(1);
 	return(obj);
@@ -60,11 +56,7 @@ template <class T> T OpenUtility::CTable<T>::Pop()
 
 template <class T> void OpenUtility::CTable<T>::Delete(unsigned int nb)
 {
-	if (nb>Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (nb>Taille) THROW(typename CTable<T>::Exception,CTable<T>::Exception::EErrOutOfBounds);
 
 	if (Taille-nb<TailleBlock/3)
 	{
@@ -86,22 +78,12 @@ template <class T> void OpenUtility::CTable<T>::DeleteAll()
 
 template <class T> T OpenUtility::CTable<T>::GetAt(unsigned int index) const
 {
-	if (index>=Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
-
+	if (index>=Taille) THROW(typename CTable<T>::Exception,CTable<T>::Exception::EErrOutOfBounds);
 	return(Table[index]);
 }
 
 template <class T> T& OpenUtility::CTable<T>::ElementAt(unsigned int index)
 {
-	if (index>=Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
-
+	if (index>=Taille) THROW(typename CTable<T>::Exception,CTable<T>::Exception::EErrOutOfBounds);
 	return(Table[index]);
 }

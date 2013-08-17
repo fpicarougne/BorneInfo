@@ -67,11 +67,7 @@ template <class T,class F,class G> void OpenUtility::CMap<T,F,G>::CommonConstruc
 {
 	VerifSystem();
 
-	if (!nBlockSize)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (!nBlockSize) THROW(CONCAT(typename CMap<T,F,G>::Exception),CMap<T,F,G>::Exception::EErrArgument,"nBlockSize must be greater than 0");
 
 	m_pHashTable=NULL;
 	m_nHashTableSize=nHashTableSize;	// default size
@@ -93,11 +89,7 @@ template <class T,class F,class G> void OpenUtility::CMap<T,F,G>::VerifSystem()
 {
 	if (!isVerifDone)
 	{
-		if (sizeof(unsigned char)!=1)
-		{
-			GetCMyExceptionObj(E,ERR_BAD_INIT);
-			throw(E);
-		}
+		if (sizeof(unsigned char)!=1) THROW(CONCAT(typename CMap<T,F,G>::Exception),CMap<T,F,G>::Exception::EErrPlatform,"sizeof(unsigned char)!=1");
 		isVerifDone=true;
 	}
 }
@@ -156,11 +148,7 @@ template <class T,class F,class G> void OpenUtility::CMap<T,F,G>::InitHashTable(
 //
 // Used to force allocation of a hash table or to override the default
 //   hash table size of (which is fairly small)
-	if (m_nCount && !nHashSize)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (m_nCount && !nHashSize) THROW(CONCAT(typename CMap<T,F,G>::Exception),CMap<T,F,G>::Exception::EErrArgument,"nHashSize must be greater than 0");
 
 	if (m_pHashTable!=NULL)
 	{
@@ -357,11 +345,7 @@ template <class T,class F,class G> void OpenUtility::CMap<T,F,G>::GetNextAssoc(M
 {
 	CAssoc *pAssocRet,*pAssocNext;
 
-	if (!m_pHashTable || !m_nCount)	// never call on empty map
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (!m_pHashTable || !m_nCount) THROW(CONCAT(typename CMap<T,F,G>::Exception),CMap<T,F,G>::Exception::EErrArgument,"Empty map");
 
 	pAssocRet=(CAssoc*)rNextMapPOSITION;
 	if (pAssocRet==NULL)

@@ -3,6 +3,7 @@ precision mediump float;
 //uniform vec3 u_LightDir;
 //uniform vec3 u_LightColor;
 uniform sampler2D u_texId;
+uniform vec4 u_GlobalColor;
 
 varying vec3 v_Normals;
 varying vec4 v_Color;
@@ -17,6 +18,6 @@ void main()
 //	vec3 calcColor = vec3(0.2,0.2,0.2) + u_LightColor * intensity;
 //	gl_FragColor = vec4(texColor.rgb * calcColor, texColor.a);
 //	gl_FragColor = v_Color;
-	if (texColor.r<0.01) discard;
-	gl_FragColor = vec4(1.0,1.0,1.0,texColor.r);
+//	if (texColor.r<0.01) discard;
+	gl_FragColor = texColor*u_GlobalColor;
 }

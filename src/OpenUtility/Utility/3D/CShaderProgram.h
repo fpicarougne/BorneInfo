@@ -14,28 +14,21 @@ class CShaderProgram
 public:
 	class Exception : public OpenUtility::Exception
 	{
-		friend class CShaderProgram;
-
-	private:
+	public:
 		enum EError
 		{
 			EErrNotValid,
 			EErrIdNotFound
 		};
 	
-	private:
-		Exception(EError err,const char *detail=NULL);
-
 	public:
+		Exception(EError err,const char *detail=NULL);
 		Exception(const Exception &obj);
 		~Exception() throw() {}
-
-	protected:
-		void UpdateStr();
+		inline EError GetError() {return(ErrType);}
 
 	private:
 		EError ErrType;
-		CStream Detail;
 	};
 
 private:
@@ -71,11 +64,14 @@ public:
 	void RemoveShader(CShaderFile *shader);
 	bool LinkProgram();
 	bool UseProgram();
+	bool UseProgram() const;
 	static void UnUseProgram();
-	inline const CStream& GetLog() {return(CurLog);}
+	inline const CStream& GetLog() const {return(CurLog);}
 	GLint GetVariableId(const char *str);
+	GLint GetVariableId(const char *str) const;
 	inline GLint operator[](const char *str) {return(GetVariableId(str));}
-	inline GLuint GetId() {return(idProgram);}
+	inline GLint operator[](const char *str) const {return(GetVariableId(str));}
+	inline GLuint GetId() const {return(idProgram);}
 	inline void SetHasChanged() {State=EProgramModified;}
 
 private:
@@ -83,6 +79,7 @@ private:
 	void InitCopy(const CShaderProgram &obj);
 	bool GetOpenglLog();
 	bool IsValidProgramState();
+	bool IsValidProgramState() const;
 
 private:
 	EProgramState State;

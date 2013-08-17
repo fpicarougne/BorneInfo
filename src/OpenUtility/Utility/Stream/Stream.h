@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-//#include <iostream.h>
+#include <iostream>
 
 #ifdef WIN32
 	#ifdef OPENUTILITY_DLL
@@ -25,18 +25,22 @@
 namespace OpenUtility
 {
 
+class Exception;
+
 class STREAM_API CGalStream
 {
 public:
 	CGalStream();
-	~CGalStream();
-	operator char*() const;
+	virtual ~CGalStream();
+//	operator char*() const;	// deleted because bad explicit conversion on compare stream!
 
 protected:
 	char *Stream;
 	unsigned int taille;
 
 public:
+	char* GetStream() const;
+	unsigned int GetSize() const;
 	void ReplaceLastCar(char c);
 	int FindString(char *Str,int Start=0,int End=STR_END);
 
@@ -69,65 +73,41 @@ protected:
 // Operations
 public:
 	CStream(bool empty=false);
-	CStream(CStream &S);
+	CStream(const CStream &S);
 	CStream(const char *buffer);
-	CStream(char car);
-	~CStream();
-	char* GetStream() const;
+	CStream(const char car);
+	virtual ~CStream();
 	char& operator[](const int indice);
-	unsigned int GetSize();
-	void AddStream(const char *buffer,int size);
-	void AddStream(char car);
+	void AddStream(const char *buffer,const int size);
+	void AddStream(const char car);
 	void AddFormatStream(const char *StrFormat,...);
 	void AddVFormatStream(const char *StrFormat,va_list argList);
-	CStream& operator+(char *buffer);
-	CStream& operator+(const char *buffer);
-	CStream& operator+(char car);
-	CStream& operator+(CStream &S);
-	CStream& operator+(CBlockStream &S);
+	CStream operator+(const char *buffer) const;
+	CStream operator+(char car) const;
+	CStream operator+(const CGalStream &S) const;
 	CStream& operator=(const char car);
-	CStream& operator=(char *buffer);
 	CStream& operator=(const char *buffer);
-	CStream& operator=(CStream &S);
-	CStream& operator=(CBlockStream &S);
+	CStream& operator=(const CStream &S);
+	CStream& operator=(const CBlockStream &S);
 	CStream& operator+=(const char *buffer);
-	CStream& operator+=(char *buffer);
-	CStream& operator+=(char car);
-	CStream& operator+=(CStream &S);
-	CStream& operator+=(CBlockStream &S);
-	bool operator==(CStream &S);
-	bool operator==(CBlockStream &S);
-	bool operator==(char *Str);
-	bool operator==(const char *Str);
-	bool operator!=(CStream &S);
-	bool operator!=(CBlockStream &S);
-	bool operator!=(char *Str);
-	bool operator!=(const char *Str);
-	bool operator<(CStream &S);
-	bool operator<(CBlockStream &S);
-	bool operator<(const char *Str);
-	bool operator<(const char car);
-	bool operator<=(CStream &S);
-	bool operator<=(CBlockStream &S);
-	bool operator<=(const char *Str);
-	bool operator<=(const char car);
-	bool operator>(CStream &S);
-	bool operator>(CBlockStream &S);
-	bool operator>(const char *Str);
-	bool operator>(const char car);
-	bool operator>=(CStream &S);
-	bool operator>=(CBlockStream &S);
-	bool operator>=(const char *Str);
-	bool operator>=(const char car);
-	friend CStream operator+(CStream &S1,CStream &S2);
-	friend CStream operator+(CStream &S,const char *buffer);
-	friend CStream operator+(const char *buffer,CStream &S);
-	friend CStream operator+(CStream &S,char car);
-	friend CStream operator+(char car,CStream &S);
-/*
-	friend ostream& operator<<(ostream &ar,CStream &S);
-	friend istream& operator>>(istream &ar,CStream &S);
-*/
+	CStream& operator+=(const char car);
+	CStream& operator+=(const CGalStream &S);
+	bool operator==(const CGalStream &S) const;
+	bool operator==(const char *Str) const;
+	bool operator!=(const CGalStream &S) const;
+	bool operator!=(const char *Str) const;
+	bool operator<(const CGalStream &S) const;
+	bool operator<(const char *Str) const;
+	bool operator<(const char car) const;
+	bool operator<=(const CGalStream &S) const;
+	bool operator<=(const char *Str) const;
+	bool operator<=(const char car) const;
+	bool operator>(const CGalStream &S) const;
+	bool operator>(const char *Str) const;
+	bool operator>(const char car) const;
+	bool operator>=(const CGalStream &S) const;
+	bool operator>=(const char *Str) const;
+	bool operator>=(const char car) const;
 	void Format(const char *StrFormat,...);
 	void VFormat(const char *StrFormat,va_list argList);
 	void ToLower();
@@ -148,14 +128,6 @@ private:
 	void CalcNewSize();
 };
 
-/*STREAM_API CStream operator+(CStream &S1,CStream &S2);
-STREAM_API CStream operator+(CStream &S,const char *buffer);
-STREAM_API CStream operator+(const char *buffer,CStream &S);
-STREAM_API CStream operator+(CStream &S,char car);
-STREAM_API CStream operator+(char car,CStream &S);
-STREAM_API ostream& operator<<(ostream &ar,CStream &S);
-STREAM_API istream& operator>>(istream &ar,CStream &S);*/
-
 class STREAM_API CBlockStream : public CGalStream
 {
 friend class CStream;
@@ -172,14 +144,12 @@ private:
 // Operations
 public:
 	CBlockStream(int TBlock=TAILLE_DEF);
-	CBlockStream(CBlockStream &S,int TBlock);
-	CBlockStream(CBlockStream &S);
-	CBlockStream(CStream &S,int TBlock=TAILLE_DEF);
+	CBlockStream(const CBlockStream &S,int TBlock);
+	CBlockStream(const CBlockStream &S);
+	CBlockStream(const CStream &S,int TBlock=TAILLE_DEF);
 	CBlockStream(const char *buffer,int TBlock=TAILLE_DEF);
 	CBlockStream(const char car,int TBlock=TAILLE_DEF);
-	~CBlockStream();
-	char* GetStream() const;
-	unsigned int GetSize();
+	virtual ~CBlockStream();
 	void AddStream(const char *buffer,int size);
 	void AddStream(char car);
 	void AddFormatStream(const char *StrFormat,...);
@@ -242,18 +212,16 @@ private:
 	void CalcNewSize();
 };
 
-CStream operator+(CStream &S1,CStream &S2);
-CStream operator+(CStream &S,const char *buffer);
-CStream operator+(const char *buffer,CStream &S);
-CStream operator+(CStream &S,char car);
-CStream operator+(char car,CStream &S);
+STREAM_API CStream operator+(CStream &S1,CStream &S2);
+STREAM_API CStream operator+(CStream &S,const char *buffer);
+STREAM_API CStream operator+(const char *buffer,CStream &S);
+STREAM_API CStream operator+(CStream &S,char car);
+STREAM_API CStream operator+(char car,CStream &S);
 
-CStream& operator<<(CStream &stream,char *str);
-
-/*
-ostream& operator<<(ostream &ar,CStream &S);
-istream& operator>>(istream &ar,CStream &S);
-*/
+STREAM_API CStream& operator<<(CStream &stream,char *str);
+STREAM_API std::ostream& operator<<(std::ostream &out,const CGalStream &S);
+//std::istream& operator>>(std::istream &ar,CStream &S);
+//std::istream& operator>>(std::istream &ar,CBlockStream &S);
 
 }
 

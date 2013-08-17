@@ -4,10 +4,11 @@
 #include <ctype.h>
 #include "Stream.h"
 #include "../Memory.h"
+#include "../OUException.h"
 
 OpenUtility::CBlockStream::CBlockStream(int TBlock)
 {
-	if (TBlock<2) throw(ERR_ARGUMENT);
+	if (TBlock<2) THROW(Exception,"TBlock must be at least 2");
 
 	Stream=(char*)MyMalloc(TBlock*sizeof(char));
 	taille=0;
@@ -16,11 +17,11 @@ OpenUtility::CBlockStream::CBlockStream(int TBlock)
 	IncBlock=TBlock;
 }
 
-OpenUtility::CBlockStream::CBlockStream(OpenUtility::CBlockStream &S,int TBlock)
+OpenUtility::CBlockStream::CBlockStream(const OpenUtility::CBlockStream &S,int TBlock)
 {
 	char *temp=S.GetStream();
 
-	if (TBlock<2) throw(ERR_ARGUMENT);
+	if (TBlock<2) THROW(Exception,"TBlock must be at least 2");
 
 	taille=S.GetSize();
 	TailleBlock=(((taille+1)/TBlock)+1)*TBlock;
@@ -31,7 +32,7 @@ OpenUtility::CBlockStream::CBlockStream(OpenUtility::CBlockStream &S,int TBlock)
 	IncBlock=TBlock;
 }
 
-OpenUtility::CBlockStream::CBlockStream(OpenUtility::CBlockStream &S)
+OpenUtility::CBlockStream::CBlockStream(const OpenUtility::CBlockStream &S)
 {
 	taille=S.taille;
 	IncBlock=S.IncBlock;
@@ -42,11 +43,11 @@ OpenUtility::CBlockStream::CBlockStream(OpenUtility::CBlockStream &S)
 	Stream[taille]='\0';
 }
 
-OpenUtility::CBlockStream::CBlockStream(CStream &S,int TBlock)
+OpenUtility::CBlockStream::CBlockStream(const CStream &S,int TBlock)
 {
 	char *temp=S.GetStream();
 
-	if (TBlock<2) throw(ERR_ARGUMENT);
+	if (TBlock<2) THROW(Exception,"TBlock must be at least 2");
 
 	taille=S.GetSize();
 	TailleBlock=(((taille+1)/TBlock)+1)*TBlock;
@@ -59,7 +60,7 @@ OpenUtility::CBlockStream::CBlockStream(CStream &S,int TBlock)
 
 OpenUtility::CBlockStream::CBlockStream(const char *buffer,int TBlock)
 {
-	if (TBlock<2) throw(ERR_ARGUMENT);
+	if (TBlock<2) THROW(Exception,"TBlock must be at least 2");
 
 	if (buffer==NULL) taille=0;
 	else taille=(unsigned int)strlen(buffer);
@@ -73,7 +74,7 @@ OpenUtility::CBlockStream::CBlockStream(const char *buffer,int TBlock)
 
 OpenUtility::CBlockStream::CBlockStream(const char car,int TBlock)
 {
-	if (TBlock<2) throw(ERR_ARGUMENT);
+	if (TBlock<2) THROW(Exception,"TBlock must be at least 2");
 
 	taille=1;
 	TailleBlock=(((taille+1)/TBlock)+1)*TBlock;
@@ -92,16 +93,6 @@ OpenUtility::CBlockStream::~CBlockStream()
 unsigned int OpenUtility::CBlockStream::Hash(const OpenUtility::CBlockStream *str)
 {
 	return(HashStr(str->GetStream()));
-}
-
-char* OpenUtility::CBlockStream::GetStream() const
-{
-	return(Stream);
-}
-
-unsigned int OpenUtility::CBlockStream::GetSize()
-{
-	return(taille);
 }
 
 void OpenUtility::CBlockStream::AddStream(const char *buffer,int size)
@@ -408,11 +399,7 @@ void OpenUtility::CBlockStream::Format(const char *StrFormat,...)
 	TailleBlock=(((taille+1)/IncBlock)+1)*IncBlock;
 	Stream=(char*)MyRealloc(Stream,TailleBlock*sizeof(char));
 
-	if ((RealLen=vsprintf(Stream,StrFormat,marker))>(int)taille)
-	{
-		GetCMyExceptionObj(E,ERR_PRGM);
-		throw(E);
-	}
+	if ((RealLen=vsprintf(Stream,StrFormat,marker))>(int)taille) THROW(Exception,"Implementation problem, contact OpenUtility developpers");
 	taille=RealLen;
 
 	va_end(marker);	// Libère la variable arguments
@@ -426,11 +413,7 @@ void OpenUtility::CBlockStream::VFormat(const char *StrFormat,va_list argList)
 	TailleBlock=(((taille+1)/IncBlock)+1)*IncBlock;
 	Stream=(char*)MyRealloc(Stream,TailleBlock*sizeof(char));
 
-	if ((RealLen=vsprintf(Stream,StrFormat,argList))>(int)taille)
-	{
-		GetCMyExceptionObj(E,ERR_PRGM);
-		throw(E);
-	}
+	if ((RealLen=vsprintf(Stream,StrFormat,argList))>(int)taille) THROW(Exception,"Implementation problem, contact OpenUtility developpers");
 	taille=RealLen;
 }
 
@@ -445,11 +428,7 @@ void OpenUtility::CBlockStream::AddFormatStream(const char *StrFormat,...)
 	TailleBlock=(((taille+tailletemp+1)/IncBlock)+1)*IncBlock;
 	Stream=(char*)MyRealloc(Stream,TailleBlock*sizeof(char));
 
-	if ((RealLen=vsprintf(&Stream[taille],StrFormat,marker))>(int)tailletemp)
-	{
-		GetCMyExceptionObj(E,ERR_PRGM);
-		throw(E);
-	}
+	if ((RealLen=vsprintf(&Stream[taille],StrFormat,marker))>(int)tailletemp) THROW(Exception,"Implementation problem, contact OpenUtility developpers");
 	taille+=RealLen;
 
 	va_end(marker);	// Libère la variable arguments
@@ -463,11 +442,7 @@ void OpenUtility::CBlockStream::AddVFormatStream(const char *StrFormat,va_list a
 	TailleBlock=(((taille+tailletemp+1)/IncBlock)+1)*IncBlock;
 	Stream=(char*)MyRealloc(Stream,TailleBlock*sizeof(char));
 
-	if ((RealLen=vsprintf(&Stream[taille],StrFormat,argList))>(int)tailletemp)
-	{
-		GetCMyExceptionObj(E,ERR_PRGM);
-		throw(E);
-	}
+	if ((RealLen=vsprintf(&Stream[taille],StrFormat,argList))>(int)tailletemp) THROW(Exception,"Implementation problem, contact OpenUtility developpers");
 	taille+=RealLen;
 }
 
@@ -538,11 +513,5 @@ void OpenUtility::CBlockStream::ReplaceAll(char *StrFind,char *StrReplace)
 
 	i=0;
 	j=(int)strlen(StrReplace);
-	try
-	{
-		while ((i=ReplaceOne(StrFind,StrReplace,i))!=-1) i+=j;
-	}
-	catch (CMyException E)
-	{
-	}
+	while ((i=ReplaceOne(StrFind,StrReplace,i))!=-1) i+=j;
 }

@@ -108,6 +108,8 @@ bool GlWindow::CreateOpenGlContext()
 		EGL_ALPHA_SIZE, 8,
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
 		EGL_DEPTH_SIZE, 16,
+//		EGL_SAMPLE_BUFFERS, 1,
+//		EGL_SAMPLES, 4,
 		EGL_NONE
 	};
 
@@ -519,6 +521,7 @@ void GlWindow::ReadEvent(SPeripheral *periph)
 
 				switch(periph->GetType())
 				{
+				case EPTtouchscreen:
 				case EPTmouse:
 					if (TEST_BIT(AXE_X,AxeMap) || TEST_BIT(AXE_Y,AxeMap))
 					{
@@ -687,21 +690,53 @@ void GlWindow::CloseEvents()
 
 void GlWindow::MainLoop()
 {
+	struct timespec curTime;
+	struct timespec waitTime={0,10000000};
+	unsigned long long millisec;
+
 	Init();
 	GL_CHECK();
+
+	clock_gettime(CLOCK_MONOTONIC,&_debTime);
 	while (!_request_end)
 	{
-		PreRender();
-		Render();
+		clock_gettime(CLOCK_MONOTONIC,&curTime);
+		waitTime=DiffTime(_debTime,curTime);
+		millisec=waitTime.tv_nsec/1000000+(waitTime.tv_sec%2000000)*1000;
 
-		glFlush();
-		glFinish();
+		if (PreRender(millisec) /*|| true*/)
+		{
+			Render();
 
-		GL_CHECK();
-		eglSwapBuffers(Display, Surface);
+			glFlush();
+			glFinish();
+
+			GL_CHECK();
+			eglSwapBuffers(Display, Surface);
+		}
+		clock_gettime(CLOCK_MONOTONIC,&waitTime);
+		waitTime=DiffTime(curTime,waitTime);
+		if ((waitTime.tv_sec==0) && (waitTime.tv_nsec<(1000000000/30)))
+		{
+			waitTime.tv_nsec=1000000000/30-waitTime.tv_nsec;
+			nanosleep(&waitTime,NULL);
+		}
 	}
 	Uninit();
 	_CloseWindow();
+}
+
+timespec GlWindow::DiffTime(timespec start,timespec end)
+{
+	timespec temp;
+	if ((end.tv_nsec-start.tv_nsec)<0) {
+		temp.tv_sec = end.tv_sec-start.tv_sec-1;
+		temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
+	} else {
+		temp.tv_sec = end.tv_sec-start.tv_sec;
+		temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+	}
+	return temp;
 }
 
 double GlWindow::GetAxeValue(unsigned int id,EPeriphAxe axe)
@@ -838,6 +873,7 @@ const char* GlWindow::GetPeripheralTypeName(EPeriphType type)
 	{
 	case EPTkeyboard:return("Keyboard");break;
 	case EPTmouse:return("Mouse");break;
+	case EPTtouchscreen:return("Touch screen");break;
 	case EPTjoystick:return("Joystick/Gamepad");break;
 	case EPT6axis:return("6 axis");break;
 	default:return("Unknown");
@@ -1079,6 +1115,7 @@ GlWindow::SPeripheral::SPeripheral(int fd,const char *name,OpenUtility::CListe<O
 									if (keybNb>5) Type=EPTkeyboard;
 								}
 								else if (bitK==BTN_MOUSE) Type=EPTmouse;
+								else if (bitK==BTN_TOUCH) Type=EPTtouchscreen;
 								else if ((bitK==BTN_GAMEPAD) || (bitK==BTN_JOYSTICK)) Type=EPTjoystick;
 							}
 
@@ -1109,7 +1146,7 @@ GlWindow::SPeripheral::SPeripheral(int fd,const char *name,OpenUtility::CListe<O
 							}
 						}
 					}
-					if ((Type==EPTunknown) || (Type==EPTmouse))
+					if ((Type==EPTunknown) || (Type==EPTmouse) || (Type==EPTtouchscreen))
 					{
 						if (TEST_BIT(AXE_X,sAxe->AxeMap) &&
 							TEST_BIT(AXE_Y,sAxe->AxeMap) &&

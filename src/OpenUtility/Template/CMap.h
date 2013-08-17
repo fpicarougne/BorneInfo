@@ -5,6 +5,7 @@
 	#pragma warning(disable : 4345)
 #endif
 
+#include "../Utility/OUException.h"
 #include "CAllocator.h"
 
 typedef void* MapPOSITION;
@@ -15,6 +16,38 @@ namespace OpenUtility
 template <class T,class F=T,class G=F>
 class CMap
 {
+public:
+	class Exception : public OpenUtility::Exception
+	{
+	public:
+		enum EError
+		{
+			EErrArgument,
+			EErrPlatform
+		};
+	
+	public:
+		Exception(EError err,const char *detail=NULL) :
+			OpenUtility::Exception(),
+			ErrType(err)
+		{
+			CStream Err;
+			switch(ErrType)
+			{
+			case EErrArgument:Err+="Error on argumetns call";break;
+			case EErrPlatform:Err+="Platform not compatible with this code";break;
+			}
+			if (detail) Err.AddFormatStream(" (%s)",detail);
+			SetDetail(Err.GetStream());
+		}
+		Exception(const Exception &obj) : OpenUtility::Exception(obj),ErrType(obj.ErrType) {}
+		~Exception() throw() {}
+		inline EError GetError() {return(ErrType);}
+
+	private:
+		EError ErrType;
+	};
+
 private:
 	// Association
 	struct CAssoc

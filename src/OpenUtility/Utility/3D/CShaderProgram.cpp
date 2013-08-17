@@ -8,33 +8,29 @@
 #include "CShaderProgram.h"
 
 OpenUtility::CShaderProgram::Exception::Exception(OpenUtility::CShaderProgram::Exception::EError err,const char *detail) :
-	ErrType(err),
-	Detail(detail)
+	OpenUtility::Exception(),
+	ErrType(err)
 {
-	UpdateStr();
+	CStream Err;
+
+	switch(ErrType)
+	{
+	case EErrNotValid:
+		Err+="Shader program not valid";
+		break;
+
+	case EErrIdNotFound:
+		Err+="Shader variable id not found";
+		break;
+	}
+	if (detail) Err.AddFormatStream(" (%s)",detail);
+	SetDetail(Err.GetStream());
 }
 
 OpenUtility::CShaderProgram::Exception::Exception(const OpenUtility::CShaderProgram::Exception &obj) :
 	OpenUtility::Exception(obj),
-	ErrType(obj.ErrType),
-	Detail(obj.Detail)
+	ErrType(obj.ErrType)
 {
-}
-
-void OpenUtility::CShaderProgram::Exception::UpdateStr()
-{
-	if (Error.GetSize()) Error.AddStream('\n');
-	switch(ErrType)
-	{
-	case EErrNotValid:
-		Error+="Shader program not valid";
-		break;
-
-	case EErrIdNotFound:
-		Error+="Shader variable id not found";
-		if (Detail.GetSize()) Error.AddFormatStream(" (%s)",Detail.GetStream());
-		break;
-	}
 }
 
 //****************************************************************************************
@@ -215,7 +211,7 @@ bool OpenUtility::CShaderProgram::LinkProgram()
 				{
 					glGetActiveAttrib(idProgram,j,maxLength,NULL,&varSize,&varType,varName);
 					shaderVariable=VectVariable.Add(new SShaderVariable(varName,EVariableUniform,varType,varSize,glGetAttribLocation(idProgram,varName)));
-					MapVariable[shaderVariable->Name]=shaderVariable;
+					MapVariable[shaderVariable->Name.GetStream()]=shaderVariable;
 					//GL_FLOAT, GL_FLOAT_VEC2, GL_FLOAT_VEC3, GL_FLOAT_VEC4, GL_FLOAT_MAT2, GL_FLOAT_MAT3, GL_FLOAT_MAT4, GL_FLOAT_MAT2x3, GL_FLOAT_MAT2x4, GL_FLOAT_MAT3x2, GL_FLOAT_MAT3x4, GL_FLOAT_MAT4x2, or GL_FLOAT_MAT4x3
 				}
 				delete[] varName;
@@ -234,7 +230,7 @@ bool OpenUtility::CShaderProgram::LinkProgram()
 				{
 					glGetActiveUniform(idProgram,j,maxLength,NULL,&varSize,&varType,varName);
 					shaderVariable=VectVariable.Add(new SShaderVariable(varName,EVariableUniform,varType,varSize,glGetUniformLocation(idProgram,varName)));
-					MapVariable[shaderVariable->Name]=shaderVariable;
+					MapVariable[shaderVariable->Name.GetStream()]=shaderVariable;
 				}
 				delete[] varName;
 			}
@@ -253,7 +249,7 @@ bool OpenUtility::CShaderProgram::GetOpenglLog()
 	if (infologLength>1)
 	{
 		CurLog.AllocBuffer(infologLength+1);
-		glGetProgramInfoLog(idProgram,infologLength,&charsWritten,CurLog);
+		glGetProgramInfoLog(idProgram,infologLength,&charsWritten,CurLog.GetStream());
 		CurLog[charsWritten]='\0';
 		return(true);
 	}
@@ -267,7 +263,19 @@ bool OpenUtility::CShaderProgram::IsValidProgramState()
 	return(State==EProgramValid);
 }
 
+bool OpenUtility::CShaderProgram::IsValidProgramState() const
+{
+	return(State==EProgramValid);
+}
+
 bool OpenUtility::CShaderProgram::UseProgram()
+{
+	if (!IsValidProgramState()) return(false);
+	glUseProgram(idProgram);
+	return(true);
+}
+
+bool OpenUtility::CShaderProgram::UseProgram() const
 {
 	if (!IsValidProgramState()) return(false);
 	glUseProgram(idProgram);
@@ -280,6 +288,19 @@ void OpenUtility::CShaderProgram::UnUseProgram()
 }
 
 GLint OpenUtility::CShaderProgram::GetVariableId(const char *str)
+{
+	if (IsValidProgramState())
+	{
+		SShaderVariable *ShaderVariable;
+
+		if (!MapVariable.Lookup(str,(void*&)ShaderVariable)) THROW(Exception,Exception::EErrIdNotFound,str);
+		return(ShaderVariable->Id);
+	}
+	THROW(Exception,Exception::EErrNotValid);
+	return(0);
+}
+
+GLint OpenUtility::CShaderProgram::GetVariableId(const char *str) const
 {
 	if (IsValidProgramState())
 	{

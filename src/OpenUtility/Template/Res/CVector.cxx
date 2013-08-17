@@ -110,7 +110,7 @@ template <class T> T* OpenUtility::CVector<T>::Add(T* Obj)
 	if (Taille+1>TailleBlock)
 	{
 		if (IncBlock) TailleBlock+=IncBlock;
-		else	// Heuristique piquée aux MFC
+		else
 		{
 			int Inc;
 			Inc=(Taille+1) / 8;
@@ -125,11 +125,7 @@ template <class T> T* OpenUtility::CVector<T>::Add(T* Obj)
 
 template <class T> void OpenUtility::CVector<T>::Remove(unsigned int nb)
 {
-	if (nb>Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (nb>Taille) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	if (Taille-nb<TailleBlock/3)
 	{
@@ -149,11 +145,7 @@ template <class T> void OpenUtility::CVector<T>::RemoveAll()
 
 template <class T> void OpenUtility::CVector<T>::Delete(unsigned int nb)
 {
-	if (nb>Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (nb>Taille) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	for (unsigned int i=1;i<=nb;i++) delete Vecteur[Taille-i];
 	if (Taille-nb<TailleBlock/3)
@@ -176,22 +168,14 @@ template <class T> void OpenUtility::CVector<T>::DeleteAll()
 
 template <class T> T* OpenUtility::CVector<T>::GetAt(unsigned int index) const
 {
-	if (index>=Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (index>=Taille) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	return(Vecteur[index]);
 }
 
 template <class T> T*& OpenUtility::CVector<T>::ElementAt(unsigned int index)
 {
-	if (index>=Taille)
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if (index>=Taille) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	return(Vecteur[index]);
 }
@@ -200,11 +184,7 @@ template <class T> void OpenUtility::CVector<T>::Swap(unsigned int index1,unsign
 {
 	T* PtrT;
 
-	if ((index1>=Taille) || (index2>=Taille))
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if ((index1>=Taille) || (index2>=Taille)) THROW(typename IContener<T>::Exception,IContener<T>::Exception::EErrOutOfBounds);
 
 	if (index1!=index2)
 	{

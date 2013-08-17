@@ -2,6 +2,7 @@
     #define	_CTextureMultiQuad_h
 
 #include "CTexture.h"
+#include "CTextureQuad.h"
 #include "../../Template/CVector.h"
 
 namespace OpenUtility
@@ -18,7 +19,7 @@ public:
 		double maxW,maxH;
 	};
 
-	class CQuad
+	class CQuad : public ITextureQuad
 	{
 	friend class CTextureMultiQuad;
 
@@ -28,6 +29,7 @@ public:
 		CQuad& operator=(const CQuad &obj) {MultiQuad=obj.MultiQuad;Id=obj.Id;W=obj.W;H=obj.H;return(*this);}
 
 	public:
+		inline const CTexture* GetTexture() const {return(MultiQuad->GetTexture());}
 		inline double GetW() const {return(W);}
 		inline double GetH() const {return(H);}
 		inline void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex) {MultiQuad->AttachAttribToData(vPos,vNorm,vTex);}
@@ -57,7 +59,7 @@ public:
 	void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex);
 	void Draw(unsigned int i);
 	inline unsigned int GetSize() const {return(Quads.GetSize());}
-	inline CQuad* operator[](unsigned int i) {return(Quads[i]);}
+	inline ITextureQuad* operator[](unsigned int i) {return(Quads[i]);}
 
 private:
 	void GenQuads(CVector<SQuad> &quads);

@@ -1,7 +1,8 @@
 #ifndef Vector_h
 	#define Vector_h
 
-#include "CContenerInterface.h"
+#include "Interfaces/IContener.h"
+#include "../Utility/OUException.h"
 
 #define DEF_SIZE_VECTOR 30
 
@@ -9,7 +10,7 @@ namespace OpenUtility
 {
 
 template <class T>
-class CVector : public CContenerInterface<T>
+class CVector : public IContener<T>
 {
 public:
 	CVector(unsigned int size=DEF_SIZE_VECTOR);

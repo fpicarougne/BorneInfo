@@ -9,6 +9,9 @@
 #define DTOR 0.017453292519943295769236907684886
 #define RTOD 57.295779513082320876798154814105
 
+namespace OpenUtility
+{
+
 struct SFrustum
 {
 	double pLeft,pRight,pTop,pBottom,pNear,pFar;
@@ -185,7 +188,7 @@ public:
 	RGBAd(double w,double x,double y,double z) : r(w),g(x),b(y),a(z) {Init();Normalize();}
 	RGBAd(RGBAd &s) : r(s.r),g(s.g),b(s.b),a(s.a) {Init();Normalize();}
 	RGBAd& operator=(const RGBAd &v) {r=v.r;g=v.g;b=v.b;a=v.a;return(*this);}
-	void Set(double w=1.0,double x=1.0,double y=1.0,double z=1.0) {r=w;g=x;b=y;a=z;Normalize();}
+	inline void Set(const double w=1.0,const double x=1.0,const double y=1.0,const double z=1.0) {r=w;g=x;b=y;a=z;Normalize();}
 	double r,g,b,a;
 	double *vect[4];
 
@@ -201,7 +204,7 @@ public:
 	RGBAf(float w,float x,float y,float z) : r(w),g(x),b(y),a(z) {Init();Normalize();}
 	RGBAf(RGBAf &s) : r(s.r),g(s.g),b(s.b),a(s.a) {Init();Normalize();}
 	RGBAf& operator=(const RGBAf &v) {r=v.r;g=v.g;b=v.b;a=v.a;return(*this);}
-	void Set(float w=1.0,float x=1.0,float y=1.0,float z=1.0) {r=w;g=x;b=y;a=z;Normalize();}
+	inline void Set(const float w=1.0,const float x=1.0,const float y=1.0,const float z=1.0) {r=w;g=x;b=y;a=z;Normalize();}
 	float r,g,b,a;
 	float *vect[4];
 
@@ -278,9 +281,9 @@ private:
 	float rotmatrix[16];
 };
 
-OpenUtility::CStream& operator<<(OpenUtility::CStream &stream,XYZf &vect);
-OpenUtility::CStream& operator<<(OpenUtility::CStream &stream,XYZd &vect);
-OpenUtility::CStream& operator<<(OpenUtility::CStream &stream,SPivotd &pivot);
+CStream& operator<<(CStream &stream,XYZf &vect);
+CStream& operator<<(CStream &stream,XYZd &vect);
+CStream& operator<<(CStream &stream,SPivotd &pivot);
 std::ostream& operator<<(std::ostream &os,const XYf &vect);
 std::ostream& operator<<(std::ostream &os,const XYd &vect);
 std::ostream& operator<<(std::ostream &os,const XYZf &vect);
@@ -291,5 +294,7 @@ std::ostream& operator<<(std::ostream &os,const SPivotd &pivot);
 void Matrix44Mul44(double *product,const double *a,const double *b);
 void Matrix34Mul31(XYZd *product,const double *a,const XYZd *b);
 void Matrix44Mul31(XYZd *product,const double *a,const XYZd *b);
+
+}
 
 #endif

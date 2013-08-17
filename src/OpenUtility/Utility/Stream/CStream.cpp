@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include "Stream.h"
 #include "../Memory.h"
+#include "../OUException.h"
 
 OpenUtility::CStream::CStream(bool empty)
 {
@@ -16,7 +17,7 @@ OpenUtility::CStream::CStream(bool empty)
 	taille=0;
 }
 
-OpenUtility::CStream::CStream(OpenUtility::CStream &S)
+OpenUtility::CStream::CStream(const OpenUtility::CStream &S)
 {
 	char *temp=S.GetStream();
 
@@ -56,18 +57,9 @@ OpenUtility::CStream::~CStream()
 	MyFree(Stream);
 }
 
-char* OpenUtility::CStream::GetStream() const
-{
-	return(Stream);
-}
-
 char& OpenUtility::CStream::operator[](const int i)
 {
-	if ((i<-((int)taille)) || (i>((int)taille)))
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if ((i<-((int)taille)) || (i>((int)taille))) THROW(Exception,"Out of bounds error");
 
 	// Attention l'indice peut �tre n�gatif, 
 	// l'indexation se fait alors � partir de la fin de la chaine
@@ -75,12 +67,7 @@ char& OpenUtility::CStream::operator[](const int i)
 	else return Stream[taille+i];
 }
 
-unsigned int OpenUtility::CStream::GetSize()
-{
-	return(taille);
-}
-
-void OpenUtility::CStream::AddStream(const char *buffer,int size)
+void OpenUtility::CStream::AddStream(const char *buffer,const int size)
 {
 	Stream=(char*)MyRealloc(Stream,(taille+size+1)*sizeof(char));
 	memcpy(&Stream[taille],buffer,sizeof(char)*size);
@@ -88,7 +75,7 @@ void OpenUtility::CStream::AddStream(const char *buffer,int size)
 	taille+=size;
 }
 
-void OpenUtility::CStream::AddStream(char car)
+void OpenUtility::CStream::AddStream(const char car)
 {
 	Stream=(char*)MyRealloc(Stream,(taille+2)*sizeof(char));
 	Stream[taille]=car;
@@ -96,39 +83,25 @@ void OpenUtility::CStream::AddStream(char car)
 	taille++;
 }
 
-OpenUtility::CStream& OpenUtility::CStream::operator+(char* buffer)
+OpenUtility::CStream OpenUtility::CStream::operator+(const char *buffer) const
 {
-	this->AddStream(buffer,(unsigned int)strlen(buffer));
-
-	return(*this);
+	CStream str(*this);
+	str.AddStream(buffer,(unsigned int)strlen(buffer));
+	return(str);
 }
 
-OpenUtility::CStream& OpenUtility::CStream::operator+(const char* buffer)
+OpenUtility::CStream OpenUtility::CStream::operator+(const char car) const
 {
-	this->AddStream(buffer,(unsigned int)strlen(buffer));
-
-	return(*this);
+	CStream str(*this);
+	str.AddStream(car);
+	return(str);
 }
 
-OpenUtility::CStream& OpenUtility::CStream::operator+(char car)
+OpenUtility::CStream OpenUtility::CStream::operator+(const CGalStream &S) const
 {
-	this->AddStream(car);
-
-	return(*this);
-}
-
-OpenUtility::CStream& OpenUtility::CStream::operator+(OpenUtility::CStream &S)
-{
-	this->AddStream(S.GetStream(),S.GetSize());
-
-	return(*this);
-}
-
-OpenUtility::CStream& OpenUtility::CStream::operator+(CBlockStream &S)
-{
-	this->AddStream(S.Stream,S.taille);
-
-	return(*this);
+	CStream str(*this);
+	str.AddStream(S.GetStream(),S.GetSize());
+	return(str);
 }
 
 OpenUtility::CStream& OpenUtility::CStream::operator=(const char car)
@@ -147,15 +120,7 @@ OpenUtility::CStream& OpenUtility::CStream::operator=(const char *buffer)
 	return(*this);
 }
 
-OpenUtility::CStream& OpenUtility::CStream::operator=(char *buffer)
-{
-	this->taille=0;
-	this->AddStream(buffer,(unsigned int)strlen(buffer));
-
-	return(*this);
-}
-
-OpenUtility::CStream& OpenUtility::CStream::operator=(OpenUtility::CStream &S)
+OpenUtility::CStream& OpenUtility::CStream::operator=(const OpenUtility::CStream &S)
 {
 	if (this==&S) return(*this);
 
@@ -165,7 +130,7 @@ OpenUtility::CStream& OpenUtility::CStream::operator=(OpenUtility::CStream &S)
 	return(*this);
 }
 
-OpenUtility::CStream& OpenUtility::CStream::operator=(CBlockStream &S)
+OpenUtility::CStream& OpenUtility::CStream::operator=(const CBlockStream &S)
 {
 	this->taille=0;
 	this->AddStream(S.Stream,S.taille);
@@ -173,37 +138,30 @@ OpenUtility::CStream& OpenUtility::CStream::operator=(CBlockStream &S)
 	return(*this);
 }
 
-OpenUtility::CStream& OpenUtility::CStream::operator+=(char *buffer)
-{
-	return(operator +(buffer));
-}
-
 OpenUtility::CStream& OpenUtility::CStream::operator+=(const char *buffer)
 {
-	return(operator +(buffer));
+	this->AddStream(buffer,(unsigned int)strlen(buffer));
+	return(*this);
 }
 
-OpenUtility::CStream& OpenUtility::CStream::operator+=(char car)
+OpenUtility::CStream& OpenUtility::CStream::operator+=(const char car)
 {
-	return(operator +(car));
+	this->AddStream(car);
+	return(*this);
 }
 
-OpenUtility::CStream& OpenUtility::CStream::operator+=(OpenUtility::CStream &S)
+OpenUtility::CStream& OpenUtility::CStream::operator+=(const CGalStream &S)
 {
-	return(operator +(S));
+	this->AddStream(S.GetStream(),S.GetSize());
+	return(*this);
 }
 
-OpenUtility::CStream& OpenUtility::CStream::operator+=(CBlockStream &S)
-{
-	return(operator +(S));
-}
-
-bool OpenUtility::CStream::operator==(OpenUtility::CStream &S)
+bool OpenUtility::CStream::operator==(const CGalStream &S) const
 {
 	unsigned int i=0;
 	char *temp;
 
-	if (S.taille!=taille) return(false);
+	if (S.GetSize()!=taille) return(false);
 	temp=S.GetStream();
 	while (i<taille)
 	{
@@ -213,22 +171,7 @@ bool OpenUtility::CStream::operator==(OpenUtility::CStream &S)
 	return(true);
 }
 
-bool OpenUtility::CStream::operator==(CBlockStream &S)
-{
-	unsigned int i=0;
-	char *temp;
-
-	if (S.taille!=taille) return(false);
-	temp=S.Stream;
-	while (i<taille)
-	{
-		if (temp[i]!=Stream[i]) return(false);
-		i++;
-	}
-	return(true);
-}
-
-bool OpenUtility::CStream::operator==(const char *Str)
+bool OpenUtility::CStream::operator==(const char *Str) const
 {
 	unsigned int i=0;
 
@@ -241,115 +184,72 @@ bool OpenUtility::CStream::operator==(const char *Str)
 	return(true);
 }
 
-bool OpenUtility::CStream::operator==(char *Str)
-{
-	unsigned int i=0;
-
-	if (strlen(Str)!=taille) return(false);
-	while (i<taille)
-	{
-		if (Str[i]!=Stream[i]) return(false);
-		i++;
-	}
-	return(true);
-}
-
-bool OpenUtility::CStream::operator!=(OpenUtility::CStream &S)
+bool OpenUtility::CStream::operator!=(const CGalStream &S) const
 {
 	return(!operator==(S));
 }
 
-bool OpenUtility::CStream::operator!=(CBlockStream &S)
-{
-	return(!operator==(S));
-}
-
-bool OpenUtility::CStream::operator!=(const char *Str)
+bool OpenUtility::CStream::operator!=(const char *Str) const
 {
 	return(!operator==(Str));
 }
 
-bool OpenUtility::CStream::operator!=(char *Str)
+bool OpenUtility::CStream::operator<(const CGalStream &S) const
 {
-	return(!operator==(Str));
+	return(strcmp(Stream,S.GetStream())<0);
 }
 
-bool OpenUtility::CStream::operator<(OpenUtility::CStream &S)
-{
-	return(strcmp(Stream,S.Stream)<0);
-}
-
-bool OpenUtility::CStream::operator<(CBlockStream &S)
-{
-	return(strcmp(Stream,S.Stream)<0);
-}
-
-bool OpenUtility::CStream::operator<(const char *Str)
+bool OpenUtility::CStream::operator<(const char *Str) const
 {
 	return(strcmp(Stream,Str)<0);
 }
 
-bool OpenUtility::CStream::operator<(const char car)
+bool OpenUtility::CStream::operator<(const char car) const
 {
 	return(Stream[0]<car);
 }
 
-bool OpenUtility::CStream::operator<=(OpenUtility::CStream &S)
+bool OpenUtility::CStream::operator<=(const CGalStream &S) const
 {
-	return(strcmp(Stream,S.Stream)<=0);
+	return(strcmp(Stream,S.GetStream())<=0);
 }
 
-bool OpenUtility::CStream::operator<=(CBlockStream &S)
-{
-	return(strcmp(Stream,S.Stream)<=0);
-}
-
-bool OpenUtility::CStream::operator<=(const char *Str)
+bool OpenUtility::CStream::operator<=(const char *Str) const
 {
 	return(strcmp(Stream,Str)<=0);
 }
 
-bool OpenUtility::CStream::operator<=(const char car)
+bool OpenUtility::CStream::operator<=(const char car) const
 {
 	return((Stream[0]<car) || ((taille==1) && (Stream[0]==car)));
 }
 
-bool OpenUtility::CStream::operator>(OpenUtility::CStream &S)
+bool OpenUtility::CStream::operator>(const CGalStream &S) const
 {
-	return(strcmp(Stream,S.Stream)>0);
+	return(strcmp(Stream,S.GetStream())>0);
 }
 
-bool OpenUtility::CStream::operator>(CBlockStream &S)
-{
-	return(strcmp(Stream,S.Stream)>0);
-}
-
-bool OpenUtility::CStream::operator>(const char *Str)
+bool OpenUtility::CStream::operator>(const char *Str) const
 {
 	return(strcmp(Stream,Str)>0);
 }
 
-bool OpenUtility::CStream::operator>(const char car)
+bool OpenUtility::CStream::operator>(const char car) const
 {
 	return(Stream[0]>car);
 }
 
-bool OpenUtility::CStream::operator>=(OpenUtility::CStream &S)
+bool OpenUtility::CStream::operator>=(const CGalStream &S) const
 {
-	return(strcmp(Stream,S.Stream)>=0);
+	return(strcmp(Stream,S.GetStream())>=0);
 }
 
-bool OpenUtility::CStream::operator>=(CBlockStream &S)
-{
-	return(strcmp(Stream,S.Stream)>=0);
-}
-
-bool OpenUtility::CStream::operator>=(const char *Str)
+bool OpenUtility::CStream::operator>=(const char *Str) const
 {
 	return(strcmp(Stream,Str)>=0);
 }
 
-bool OpenUtility::CStream::operator>=(const char car)
+bool OpenUtility::CStream::operator>=(const char car) const
 {
 	return((Stream[0]>car) || ((taille==1) && (Stream[0]==car)));
 }
@@ -439,11 +339,7 @@ void OpenUtility::CStream::Format(const char *StrFormat,...)
 	taille=NbCharFormat(StrFormat,marker);
 	Stream=(char*)MyRealloc(Stream,(taille+1)*sizeof(char));
 
-	if ((RealLen=vsprintf(Stream,StrFormat,marker))>(int)taille)
-	{
-		GetCMyExceptionObj(E,ERR_PRGM);
-		throw(E);
-	}
+	if ((RealLen=vsprintf(Stream,StrFormat,marker))>(int)taille) THROW(Exception,"Implementation problem, contact OpenUtility developpers");
 	taille=RealLen;
 
 	va_end(marker);	// Lib�re la variable arguments
@@ -456,11 +352,7 @@ void OpenUtility::CStream::VFormat(const char *StrFormat,va_list argList)
 	taille=NbCharFormat(StrFormat,argList);
 	Stream=(char*)MyRealloc(Stream,(taille+1)*sizeof(char));
 
-	if ((RealLen=vsprintf(Stream,StrFormat,argList))>(int)taille)
-	{
-		GetCMyExceptionObj(E,ERR_PRGM);
-		throw(E);
-	}
+	if ((RealLen=vsprintf(Stream,StrFormat,argList))>(int)taille) THROW(Exception,"Implementation problem, contact OpenUtility developpers");
 	taille=RealLen;
 }
 
@@ -474,11 +366,7 @@ void OpenUtility::CStream::AddFormatStream(const char *StrFormat,...)
 	tailletemp=NbCharFormat(StrFormat,marker);
 	Stream=(char*)MyRealloc(Stream,(taille+tailletemp+1)*sizeof(char));
 
-	if ((RealLen=vsprintf(&Stream[taille],StrFormat,marker))>(int)tailletemp)
-	{
-		GetCMyExceptionObj(E,ERR_PRGM);
-		throw(E);
-	}
+	if ((RealLen=vsprintf(&Stream[taille],StrFormat,marker))>(int)tailletemp) THROW(Exception,"Implementation problem, contact OpenUtility developpers");
 	taille+=RealLen;
 
 	va_end(marker);	// Lib�re la variable arguments
@@ -491,11 +379,7 @@ void OpenUtility::CStream::AddVFormatStream(const char *StrFormat,va_list argLis
 	tailletemp=NbCharFormat(StrFormat,argList);
 	Stream=(char*)MyRealloc(Stream,(taille+tailletemp+1)*sizeof(char));
 
-	if ((RealLen=vsprintf(&Stream[taille],StrFormat,argList))>(int)tailletemp)
-	{
-		GetCMyExceptionObj(E,ERR_PRGM);
-		throw(E);
-	}
+	if ((RealLen=vsprintf(&Stream[taille],StrFormat,argList))>(int)tailletemp) THROW(Exception,"Implementation problem, contact OpenUtility developpers");
 	taille+=RealLen;
 }
 

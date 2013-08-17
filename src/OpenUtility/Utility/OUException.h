@@ -2,9 +2,11 @@
 	#define _OUException_h
 
 #include <exception>
+#include <iostream>
 #include "Stream/Stream.h"
 
 //#define THROW(class) OpenUtility::Exception::Throw(__FILE__,__LINE__,class)
+#define CONCAT(...) __VA_ARGS__
 #define THROW(class,...) {class e(__VA_ARGS__);e.SetFileLine(__FILE__,__LINE__);throw(e);}
 
 namespace OpenUtility
@@ -13,22 +15,27 @@ namespace OpenUtility
 class Exception : public std::exception
 {
 public:
-	Exception() {}
-	Exception(const Exception &obj) : std::exception(obj),Error(obj.Error) {}
+	Exception(const char *str=NULL,bool displayStack=true);
+	Exception(const Exception &obj);
 	virtual ~Exception() throw() {}
 	friend inline std::ostream& operator<<(std::ostream &o,OpenUtility::Exception &e)
 	{
 		o << e.Error << std::endl;
 		return(o);
 	}
-	inline Exception& SetFileLine(const char *file,long line) {if (line>=0) Error.Format("File \"%s\" - line %ld",file,line);else Error="";UpdateStr();return(*this);}
-	inline const char* what() const throw() {return(Error);}
+	Exception& SetFileLine(const char *file,long line);
+	inline const char* what() const throw() {return(Error.GetStream());}
+	inline void SetDetail(const char *str) {Detail=str;UpdateStr();}
 
-protected:
-	virtual void UpdateStr() {}
+private:
+	void UpdateStr();
 
-protected:
+private:
+	bool DisplayStack;
+	CStream LineError;
+	CStream Detail;
 	CStream Error;
+	CBlockStream Stack;
 };
 
 }

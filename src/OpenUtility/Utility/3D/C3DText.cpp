@@ -1,20 +1,71 @@
 #include "C3DText.h"
 
-OpenUtility::C3DText::C3DText(const OpenUtility::CFontLoader *loader) :
-	CFontLoader::CFontEngine(loader),
+OpenUtility::C3DText::SShaders *OpenUtility::C3DText::DefaultShader=NULL;
+unsigned int OpenUtility::C3DText::DefShaderInUse=0;
+
+static const char FontVertex[]="\
+attribute vec4 vPos;\n\
+attribute vec2 vTexCoord;\n\
+\n\
+uniform mat4 u_MVPmatrix;\n\
+\n\
+varying vec2 v_texCoords;\n\
+\n\
+void main()\n\
+{\n\
+	v_texCoords = vTexCoord;\n\
+	gl_Position = u_MVPmatrix * vPos;\n\
+}\n\
+";
+
+static const char FontFragment[]="\
+precision mediump float;\n\
+\n\
+uniform sampler2D u_texId;\n\
+uniform vec4 vColor;\n\
+\n\
+varying vec2 v_texCoords;\n\
+\n\
+void main()\n\
+{\n\
+	vec4 texColor = texture2D(u_texId, v_texCoords);\n\
+	gl_FragColor = vec4(vColor.rgb, texColor.r*vColor.a);\n\
+}\n\
+";
+
+OpenUtility::C3DText::C3DText(const OpenUtility::CFontLoader *loader,double lineHeight,bool useDefaultShader) :
+	CFontLoader::IFontEngine(loader),
+	IsDefaultShaderInUse(false),
+	DefColor(1.0,1.0,1.0,1.0),
+	ReqLineHeight(lineHeight),
 	VertexTab(NULL),
 	ElementTab(NULL)
 {
+	UseDefaultShader(useDefaultShader);
+	CommonInit();
+}
+
+OpenUtility::C3DText::C3DText(const CFontLoader *loader,const double r,const double g,const double b,const double a,double lineHeight) :
+	CFontLoader::IFontEngine(loader),
+	IsDefaultShaderInUse(false),
+	DefColor(r,g,b,a),
+	ReqLineHeight(lineHeight),
+	VertexTab(NULL),
+	ElementTab(NULL)
+{
+	UseDefaultShader(true);
 	CommonInit();
 }
 
 OpenUtility::C3DText::C3DText(const C3DText &obj) :
-	CFontLoader::CFontEngine(obj),
+	CFontLoader::IFontEngine(obj),
+	ReqLineHeight(obj.ReqLineHeight),
 	VertexTab(NULL),
 	ElementTab(NULL)
 {
+	UseDefaultShader(obj.IsDefaultShaderInUse);
 	CommonInit();
-	SetText(obj.Text,obj.CurrentHAlign,obj.CurrentVAlign);
+	SetText(obj.Text.GetStream(),obj.CurrentHAlign,obj.CurrentVAlign);
 }
 
 void OpenUtility::C3DText::CommonInit()
@@ -27,6 +78,7 @@ void OpenUtility::C3DText::CommonInit()
 
 OpenUtility::C3DText::~C3DText()
 {
+	UseDefaultShader(false);
 	glDeleteBuffers(1,&VBObuffer);
 	glDeleteBuffers(1,&VBIBuffer);
 	delete[] VertexTab;
@@ -35,7 +87,39 @@ OpenUtility::C3DText::~C3DText()
 
 OpenUtility::C3DText& OpenUtility::C3DText::operator=(const C3DText &obj)
 {
+//TODO:
 	return(*this);
+}
+
+void OpenUtility::C3DText::UseDefaultShader(bool useDefShader)
+{
+	if (useDefShader)
+	{
+		if (!DefaultShader)
+		{
+			DefaultShader=new SShaders;
+			if (!DefaultShader->ShaderVertex.LoadStream(FontVertex))
+				std::cout << "-----------------------------------\nCTaskBar: Erreur vertex shader :\n" << DefaultShader->ShaderVertex.GetLog() << std::endl << "--------------------------" << std::endl;
+			if (!DefaultShader->ShaderFragment.LoadStream(FontFragment))
+				std::cout << "-----------------------------------\nCTaskBar: Erreur fragment shader :\n" << DefaultShader->ShaderFragment.GetLog() << std::endl << "--------------------------" << std::endl;
+			if (!DefaultShader->RenderingShader.LinkProgram())
+				std::cout << "-----------------------------------\nCTaskBar: Erreur shader program :\n" << DefaultShader->RenderingShader.GetLog() << std::endl << "--------------------------" << std::endl;
+		}
+		if (!IsDefaultShaderInUse) DefShaderInUse++;
+	}
+	else
+	{
+		if (IsDefaultShaderInUse)
+		{
+			DefShaderInUse--;
+			if (DefShaderInUse==0)
+			{
+				delete DefaultShader;
+				DefaultShader=NULL;
+			}
+		}
+	}
+	IsDefaultShaderInUse=useDefShader;
 }
 
 void OpenUtility::C3DText::SetText(const char *text,EHAlign hAlign,EVAlign vAlign)
@@ -49,7 +133,7 @@ void OpenUtility::C3DText::UpdateText(const char *text)
 {
 	unsigned int i;
 	int currentX,currentY;
-	double size=FontLoader->GetSize();
+	double size=FontLoader->GetSize()/ReqLineHeight;
 	const CTexture* texture=FontLoader->GetFontTexture();
 
 	Text=text;
@@ -193,20 +277,41 @@ void OpenUtility::C3DText::SetAlignement(EHAlign hAlign,EVAlign vAlign)
 	CurrentVAlign=vAlign;
 }
 
+void OpenUtility::C3DText::AttachAttribToData(GLuint vPos,GLuint vTex)
+{
+	if (!IsDefaultShaderInUse) DefaultAttachAttribToData(vPos,0,vTex);
+}
+
 void OpenUtility::C3DText::AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex)
+{
+	if (!IsDefaultShaderInUse) DefaultAttachAttribToData(vPos,vNorm,vTex);
+}
+
+void OpenUtility::C3DText::DefaultAttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex)
 {
 	glBindBuffer(GL_ARRAY_BUFFER,VBObuffer);
 	glVertexAttribPointer(vPos,3,GL_FLOAT,GL_FALSE,sizeof(SVertex),(void*)offsetof(SVertex,position));
-	glVertexAttribPointer(vNorm,3,GL_FLOAT,GL_FALSE,sizeof(SVertex),(void*)offsetof(SVertex,normal));
 	glVertexAttribPointer(vTex,2,GL_FLOAT,GL_FALSE,sizeof(SVertex),(void*)offsetof(SVertex,texcoord));
 	glEnableVertexAttribArray(vPos);
-	glEnableVertexAttribArray(vNorm);
 	glEnableVertexAttribArray(vTex);
+	if (vNorm)
+	{
+		glVertexAttribPointer(vNorm,3,GL_FLOAT,GL_FALSE,sizeof(SVertex),(void*)offsetof(SVertex,normal));
+		glEnableVertexAttribArray(vNorm);
+	}
+	else 
 	glBindTexture(GL_TEXTURE_2D,FontLoader->GetFontTexture()->GetId());
 }
 
 void OpenUtility::C3DText::Draw()
 {
+	if (IsDefaultShaderInUse && DefaultShader)
+	{
+		DefaultShader->RenderingShader.UseProgram();
+		glUniform4f(DefaultShader->RenderingShader["vColor"],DefColor.r,DefColor.g,DefColor.b,DefColor.a);
+		glUniformMatrix4fv(DefaultShader->RenderingShader["u_MVPmatrix"],1,GL_FALSE,DefMVPmatrix.GetMatrix());
+		DefaultAttachAttribToData(DefaultShader->RenderingShader["vPos"],0,DefaultShader->RenderingShader["vTexCoord"]);
+	}
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,VBIBuffer);
 	glDrawElements(GL_TRIANGLES,6*Text.GetSize(),GL_UNSIGNED_BYTE,(GLvoid*)0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);

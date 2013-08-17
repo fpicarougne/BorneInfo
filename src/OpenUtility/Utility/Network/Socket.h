@@ -3,6 +3,7 @@
 
 #ifdef WIN32
 	#include <windows.h>
+	#pragma comment(lib,"Ws2_32.lib")
 	typedef int socklen_t;
 	#define CLOSE_SOCKET(sd) closesocket(sd)
 	#define READ_SOCKET(sd,buf,size) recv(sd,buf,size,0)

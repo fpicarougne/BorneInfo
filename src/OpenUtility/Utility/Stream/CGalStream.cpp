@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include "Stream.h"
 #include "../Memory.h"
+#include "../OUException.h"
 
 #ifndef max
 	#define max(a,b)	((a>b) ? a : b)
@@ -20,9 +21,25 @@ OpenUtility::CGalStream::~CGalStream()
 {
 }
 
-OpenUtility::CGalStream::operator char* () const
+/*OpenUtility::CGalStream::operator char* () const
 {
 	return(Stream);
+}*/
+
+std::ostream& OpenUtility::operator<<(std::ostream &out,const OpenUtility::CGalStream &S)
+{
+	out << S.GetStream();
+	return(out);
+}
+
+char* OpenUtility::CGalStream::GetStream() const
+{
+	return(Stream);
+}
+
+unsigned int OpenUtility::CGalStream::GetSize() const
+{
+	return(taille);
 }
 
 unsigned int OpenUtility::CGalStream::HashStr(const char **key)
@@ -82,11 +99,7 @@ int OpenUtility::CGalStream::FindString(char *Str,int Start,int End)
 
 	if (End==STR_END) End=taille;
 
-	if ((Str==NULL) || (End>(int)taille) || (Start>End) || (Start<0))
-	{
-		GetCMyExceptionObj(E,ERR_ARGUMENT);
-		throw(E);
-	}
+	if ((Str==NULL) || (End>(int)taille) || (Start>End) || (Start<0)) THROW(Exception,"Start or End are out of bounds");
 
 	IndStream=Start;
 	IndStr=0;
@@ -150,11 +163,7 @@ int OpenUtility::CGalStream::NbCharFormat(const char *StrFormat,va_list argList)
 			nWidth=atoi(PtrStr);
 			for (;(*PtrStr!='\0') && (isdigit(*PtrStr));PtrStr++);
 		}
-		if (nWidth<0)
-		{
-			GetCMyExceptionObj(E,ERR_PRGM);
-			throw(E);
-		}
+		if (nWidth<0) THROW(Exception,"Implementation problem, contact OpenUtility developpers");
 
 		int nPrecision=0;
 		if (*PtrStr=='.')
@@ -173,11 +182,7 @@ int OpenUtility::CGalStream::NbCharFormat(const char *StrFormat,va_list argList)
 				nPrecision=atoi(PtrStr);
 				for (;(*PtrStr!='\0') && (isdigit(*PtrStr));PtrStr++);
 			}
-			if (nPrecision<0)
-			{
-				GetCMyExceptionObj(E,ERR_PRGM);
-				throw(E);
-			}
+			if (nPrecision<0) THROW(Exception,"Implementation problem, contact OpenUtility developpers");
 		}
 
 		// should be on type modifier or specifier
@@ -291,8 +296,7 @@ int OpenUtility::CGalStream::NbCharFormat(const char *StrFormat,va_list argList)
 				break;
 
 			default:	// unknown formatting option
-				GetCMyExceptionObj(E,ERR_PRGM);
-				throw(E);
+				THROW(Exception,"Implementation problem, contact OpenUtility developpers");
 			}
 		}
 

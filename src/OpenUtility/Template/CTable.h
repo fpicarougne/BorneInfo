@@ -1,9 +1,10 @@
 #ifndef Table_h
 	#define Table_h
 
-#define DEF_SIZE_Table 30
+#include "../Utility/OUException.h"
+#include "../Utility/Memory.h"
 
-#include <Utility/Memory.h>
+#define DEF_SIZE_Table 30
 
 namespace OpenUtility
 {
@@ -11,6 +12,36 @@ namespace OpenUtility
 template <class T>
 class CTable
 {
+public:
+	class Exception : public OpenUtility::Exception
+	{
+	public:
+		enum EError
+		{
+			EErrOutOfBounds
+		};
+
+	public:
+		Exception(EError err,const char *detail=NULL) :
+			OpenUtility::Exception(),
+			ErrType(err)
+		{
+			CStream Err;
+			switch(ErrType)
+			{
+			case EErrOutOfBounds:Err+="Out of bounds";break;
+			}
+			if (detail) Err.AddFormatStream(" (%s)",detail);
+			SetDetail(Err.GetStream());
+		}
+		Exception(const Exception &obj) : OpenUtility::Exception(obj),ErrType(obj.ErrType) {}
+		~Exception() throw() {}
+		inline EError GetError() {return(ErrType);}
+
+	private:
+		EError ErrType;
+	};
+
 public:
 	CTable(unsigned int size=DEF_SIZE_Table);
 	~CTable();

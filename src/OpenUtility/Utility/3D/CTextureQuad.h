@@ -6,7 +6,19 @@
 namespace OpenUtility
 {
 
-class CTextureQuad
+class ITextureQuad
+{
+public:
+	ITextureQuad() {}
+	virtual ~ITextureQuad() {}
+	virtual const CTexture* GetTexture() const =0;
+	virtual double GetW() const =0;
+	virtual double GetH() const =0;
+	virtual void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex)=0;
+	virtual void Draw()=0;
+};
+
+class CTextureQuad : public ITextureQuad
 {
 private:
 	struct SVertex

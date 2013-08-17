@@ -86,7 +86,7 @@ OpenUtility::CTexture* OpenUtility::CTexture::LoadTextureMemory(const unsigned c
 	case EPModeRGB:glMode=GL_RGB;break;
 	case EPModeRGBA:glMode=GL_RGBA;break;
 	}
-std::cout<<std::endl<<std::endl<< "w="<<w<<" h="<<h<< " wT="<<wT<<" hT="<<hT<<std::endl;
+//std::cout<<std::endl<<std::endl<< "w="<<w<<" h="<<h<< " wT="<<wT<<" hT="<<hT<<std::endl;
 
 	if (texObj->TextureId==0) glGenTextures(1,&texObj->TextureId);
 
@@ -107,7 +107,7 @@ OpenUtility::CTexture::CTextureLoader* OpenUtility::CTexture::GetLoader(const ch
 	ParseFileName(file,dir,fileName,ext);
 	for (unsigned int i=0;i<Loaders.GetSize();i++)
 	{
-		if (Loaders[i]->IsCapable(ext)) return(Loaders[i]);
+		if (Loaders[i]->IsCapable(ext.GetStream())) return(Loaders[i]);
 	}
 	return(NULL);
 }
