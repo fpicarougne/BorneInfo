@@ -210,6 +210,7 @@ void CTaskBar::Init()
 	HourMin->SetAlignement(OpenUtility::CFontLoader::IFontEngine::EHAlignRight,OpenUtility::CFontLoader::IFontEngine::EVAlignBaseligne);
 	Seconds->SetAlignement(OpenUtility::CFontLoader::IFontEngine::EHAlignRight,OpenUtility::CFontLoader::IFontEngine::EVAlignBaseligne);
 	MatrixHasChanged=true;
+	TaskBarAlpha=1;
 }
 
 void CTaskBar::UnInit()
@@ -233,7 +234,15 @@ bool CTaskBar::PreRender(unsigned long long timeUnit)
 	static struct tm lastTM={0,0,0,0,0,0,0,0,0};
 	OpenUtility::CStream strTime;
 	time_t timeStamp;
+	static bool isFirstRendering=true;
 
+	if (isFirstRendering)
+	{
+		isFirstRendering=false;
+		Anims.ShowRotateTaskBar=new SAnim(timeUnit,1000);
+	}
+
+	// Time update
 	timeStamp=time(NULL);
 	localtime_r(&timeStamp,&timeTM);
 	hasChanged=false;
@@ -258,10 +267,8 @@ bool CTaskBar::PreRender(unsigned long long timeUnit)
 	}
 	if (hasChanged) lastTM=timeTM;
 
-	const unsigned long long animTime=1000;
-	const unsigned long long animTime2Deb=4500;
-	const unsigned long long animTime2End=5000;
-	if (MatrixHasChanged || timeUnit<animTime+1000 || (timeUnit>animTime2Deb && timeUnit<animTime2End))
+	// Other update
+	if (MatrixHasChanged || Anims.HasAnim())
 	{
 		const OpenUtility::SFrustum &frustum=pClass->GetFrustum();
 		double dist=OpenUtility::v3dModule(pClass->GetCameraPos().GetPos());
@@ -273,20 +280,76 @@ bool CTaskBar::PreRender(unsigned long long timeUnit)
 		t=dist*frustum.pTop/frustum.pNear;
 		b=dist*frustum.pBottom/frustum.pNear;
 
-		MVPmatrixSeconds=MVPmatrixLogo=MVPmatrixBackground=MVPmatrixBg=ProjectionMatrix*ModelViewMatrix;
-		if (timeUnit>animTime2Deb && timeUnit<animTime2End)
+		MVPmatrixSeconds=MVPmatrixBg=ProjectionMatrix*ModelViewMatrix;
+		if (Anims.HideTaskBar || Anims.ShowTaskBar)
 		{
-			double factor=0.8;
-			BgAlpha=std::max(0.0,((animTime2End-animTime2Deb)*factor+animTime2Deb-timeUnit)/double(animTime2End-animTime2Deb)*factor);
-			MVPmatrixSeconds*=OpenUtility::CMat4x4<float>().SetTranslate(0,-taskBarHeight*(1-(animTime2End-timeUnit)/double(animTime2End-animTime2Deb)),0);
-			OpenUtility::RGBAd color(0.0,0.28,0.46,BgAlpha);
+			double translationFactor;
+			int dir;
+			SAnim **anim;
+
+			if (Anims.HideTaskBar)
+			{
+				anim=&Anims.HideTaskBar;
+				dir=0;
+			}
+			else
+			{
+				anim=&Anims.ShowTaskBar;
+				dir=1;
+			}
+
+			if ((*anim)->IsEndAnim(timeUnit))
+			{
+				TaskBarAlpha=dir;
+				translationFactor=1-dir;
+if (Anims.HideTaskBar) Anims.ShowTaskBar=new SAnim(timeUnit,500);
+				delete *anim;
+				*anim=NULL;
+			}
+			else
+			{
+				const double factor=0.8;
+				if (Anims.HideTaskBar) TaskBarAlpha=std::max(0.0,((*anim)->Duration*factor+(*anim)->StartTime-timeUnit)/((*anim)->Duration*factor));
+				else TaskBarAlpha=(*anim)->GetTimeRatio(timeUnit);
+				translationFactor=dir+(1-dir*2)*(*anim)->GetTimeRatio(timeUnit);
+			}
+			OpenUtility::CMat4x4<float> translationMatrix;
+			translationMatrix.SetTranslate(0,-taskBarHeight*translationFactor,0);
+			MVPmatrixSeconds*=translationMatrix;
+			OpenUtility::RGBAd color(0.0,0.28,0.46,TaskBarAlpha);
 			Day->SetDefaultShaderColor(color);
 			Date->SetDefaultShaderColor(color);
 			HourMin->SetDefaultShaderColor(color);
 			Seconds->SetDefaultShaderColor(color);
 		}
+		MVPmatrixLogo=MVPmatrixBackground=MVPmatrixSeconds;
+
 		MVPmatrixSeconds*=OpenUtility::CMat4x4<float>().SetTranslate(r-0.5,b,0);
-		if (timeUnit<animTime) MVPmatrixSeconds*=OpenUtility::CMat4x4<float>().SetRotate(-120+120*timeUnit/double(animTime),1,0,0);
+		MVPmatrixLogo*=OpenUtility::CMat4x4<float>().SetTranslate(0,b,0);
+		Background->UpdateCoord(l,0,r,taskBarHeight,OpenUtility::RGBAd(1.0,1.0,1.0,1.0),OpenUtility::RGBAd(1.0,1.0,1.0,1.0),OpenUtility::RGBAd(0.7,0.7,0.7,1.0),OpenUtility::RGBAd(0.7,0.7,0.7,1.0));
+		MVPmatrixBackground*=OpenUtility::CMat4x4<float>().SetTranslate(0,b,0);
+
+		double alphaBg=1;
+		if (Anims.ShowRotateTaskBar)
+		{
+			if (Anims.ShowRotateTaskBar->IsEndAnim(timeUnit))
+			{
+				delete Anims.ShowRotateTaskBar;
+				Anims.ShowRotateTaskBar=NULL;
+Anims.HideTaskBar=new SAnim(timeUnit,500);
+				alphaBg=1;
+			}
+			else
+			{
+				OpenUtility::CMat4x4<float> rotationMatrix;
+				rotationMatrix.SetRotate(-120+120*Anims.ShowRotateTaskBar->GetTimeRatio(timeUnit),1,0,0);
+				MVPmatrixSeconds*=rotationMatrix;
+				MVPmatrixLogo*=rotationMatrix;
+				MVPmatrixBackground*=rotationMatrix;
+				alphaBg=Anims.ShowRotateTaskBar->GetTimeRatio(timeUnit);
+			}
+		}
+
 		MVPmatrixDay=MVPmatrixDate=MVPmatrixHourMin=MVPmatrixSeconds;
 		MVPmatrixDay*=OpenUtility::CMat4x4<float>().SetTranslate(-4.3,0.4+0.5,0);
 		MVPmatrixDate*=OpenUtility::CMat4x4<float>().SetTranslate(-4.3,0.05+0.5,0);
@@ -298,25 +361,9 @@ bool CTaskBar::PreRender(unsigned long long timeUnit)
 		HourMin->SetDefaultShaderMatrix(MVPmatrixHourMin);
 		Seconds->SetDefaultShaderMatrix(MVPmatrixSeconds);
 
-		if (timeUnit>animTime2Deb && timeUnit<animTime2End)
-		{
-			MVPmatrixLogo*=OpenUtility::CMat4x4<float>().SetTranslate(0,-taskBarHeight*(1-(animTime2End-timeUnit)/double(animTime2End-animTime2Deb)),0);
-		}
-		MVPmatrixLogo*=OpenUtility::CMat4x4<float>().SetTranslate(0,b,0);
-		if (timeUnit<animTime) MVPmatrixLogo*=OpenUtility::CMat4x4<float>().SetRotate(-120+120*timeUnit/double(animTime),1,0,0);
 		MVPmatrixLogo*=OpenUtility::CMat4x4<float>().SetTranslate(l+Logo->GetW()/2+0.7,taskBarHeight/2,0);
 
-		Background->UpdateCoord(l,0,r,taskBarHeight,OpenUtility::RGBAd(1.0,1.0,1.0,1.0),OpenUtility::RGBAd(1.0,1.0,1.0,1.0),OpenUtility::RGBAd(0.7,0.7,0.7,1.0),OpenUtility::RGBAd(0.7,0.7,0.7,1.0));
-		if (timeUnit>animTime2Deb && timeUnit<animTime2End)
-		{
-			MVPmatrixBackground*=OpenUtility::CMat4x4<float>().SetTranslate(0,-taskBarHeight*(1-(animTime2End-timeUnit)/double(animTime2End-animTime2Deb)),0);
-		}
-		else BgAlpha=1;
-		MVPmatrixBackground*=OpenUtility::CMat4x4<float>().SetTranslate(0,b,0);
-		if (timeUnit<animTime) MVPmatrixBackground*=OpenUtility::CMat4x4<float>().SetRotate(-120+120*timeUnit/double(animTime),1,0,0);
-
-		if (timeUnit<animTime) Bg->UpdateCoord(l*10,b*10,r*10,t*10,OpenUtility::RGBAd(1.0,1.0,1.0,timeUnit/double(animTime)),OpenUtility::RGBAd(1.0,1.0,1.0,timeUnit/double(animTime)),OpenUtility::RGBAd(0.68,0.68,0.68,timeUnit/double(animTime)),OpenUtility::RGBAd(0.68,0.68,0.68,timeUnit/double(animTime)));
-		else Bg->UpdateCoord(l*frustum.pFar,b*frustum.pFar,r*frustum.pFar,t*frustum.pFar,OpenUtility::RGBAd(1.0,1.0,1.0,1.0),OpenUtility::RGBAd(1.0,1.0,1.0,1.0),OpenUtility::RGBAd(0.68,0.68,0.68,1.0),OpenUtility::RGBAd(0.68,0.68,0.68,1.0));
+		Bg->UpdateCoord(l*frustum.pFar,b*frustum.pFar,r*frustum.pFar,t*frustum.pFar,OpenUtility::RGBAd(1.0,1.0,1.0,alphaBg),OpenUtility::RGBAd(1.0,1.0,1.0,alphaBg),OpenUtility::RGBAd(0.68,0.68,0.68,alphaBg),OpenUtility::RGBAd(0.68,0.68,0.68,alphaBg));
 		MVPmatrixBg*=OpenUtility::CMat4x4<float>().SetTranslate(0,0,-(frustum.pFar-dist));
 
 		MatrixHasChanged=false;
@@ -340,14 +387,14 @@ void CTaskBar::Render()
 		Bg->AttachAttribToData(QuadShader->RenderingShader["vPos"],QuadShader->RenderingShader["vNorm"],QuadShader->RenderingShader["vColor"]);
 		Bg->Draw();
 
-		glUniform1f(QuadShader->RenderingShader["u_Alpha"],BgAlpha);
+		glUniform1f(QuadShader->RenderingShader["u_Alpha"],TaskBarAlpha);
 		glUniformMatrix4fv(QuadShader->RenderingShader["u_MVPmatrix"],1,GL_FALSE,MVPmatrixBackground.GetMatrix());
 		glUniformMatrix4fv(QuadShader->RenderingShader["u_Nmatrix"],1,GL_FALSE,ModelViewMatrix.GetMatrix());
 		Background->AttachAttribToData(QuadShader->RenderingShader["vPos"],QuadShader->RenderingShader["vNorm"],QuadShader->RenderingShader["vColor"]);
 		Background->Draw();
 
 		pClass->GetGlobalShader().UseProgram();
-		glUniform4f(pClass->GetGlobalShader()["u_GlobalColor"],1.0,1.0,1.0,BgAlpha);
+		glUniform4f(pClass->GetGlobalShader()["u_GlobalColor"],1.0,1.0,1.0,TaskBarAlpha);
 		glUniformMatrix4fv(pClass->GetGlobalShader()["u_MVPmatrix"],1,GL_FALSE,MVPmatrixLogo.GetMatrix());
 		Logo->AttachAttribToData(pClass->GetGlobalShader()["vPos"],pClass->GetGlobalShader()["vNorm"],pClass->GetGlobalShader()["vTexCoord"]);
 		Logo->Draw();

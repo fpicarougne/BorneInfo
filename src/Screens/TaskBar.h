@@ -4,7 +4,6 @@
 
 #include <Utility/3D/C3DText.h>
 #include <Utility/3D/CTextureQuad.h>
-#include <Template/CListe.h>
 #include "../RenderingObject.h"
 
 class CTaskBar : public IRenderingObject
@@ -52,9 +51,21 @@ private:
 
 	struct SAnim
 	{
+		inline SAnim(const unsigned long long start,const unsigned long long duration) : StartTime(start),Duration(duration) {}
+		inline bool IsEndAnim(unsigned long long time) {return(time>StartTime+Duration);}
+		inline double GetTimeRatio(unsigned long long time) {return(1-(StartTime+Duration-time)/double(Duration));}
 		unsigned long long StartTime;
 		unsigned long long Duration;
-		OpenUtility::CListe<SAnim>::CListeIterator pos;
+	};
+
+	struct SAnims
+	{
+		SAnims() : HideTaskBar(NULL),ShowTaskBar(NULL),ShowRotateTaskBar(NULL) {}
+		~SAnims() {delete HideTaskBar;delete ShowTaskBar;delete ShowRotateTaskBar;}
+		inline bool HasAnim() {return(HideTaskBar!=NULL || ShowTaskBar!=NULL || ShowRotateTaskBar!=NULL);}
+		SAnim *HideTaskBar;
+		SAnim *ShowTaskBar;
+		SAnim *ShowRotateTaskBar;
 	};
 
 public:
@@ -79,10 +90,10 @@ private:
 	OpenUtility::C3DText *Day,*Date,*HourMin,*Seconds;
 	OpenUtility::CTextureQuad *Logo;
 	CQuad *Background,*Bg;
-	float BgAlpha;
+	float TaskBarAlpha;
 	OpenUtility::CMat4x4<float> MVPmatrixDay,MVPmatrixDate,MVPmatrixHourMin,MVPmatrixSeconds,MVPmatrixLogo,MVPmatrixBackground,MVPmatrixBg;
 	// Annimations
-	OpenUtility::CListe<SAnim> ListAnnim;
+	SAnims Anims;
 };
 
 #endif
