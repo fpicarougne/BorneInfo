@@ -50,7 +50,7 @@ OpenUtility::CTextureMultiQuad& OpenUtility::CTextureMultiQuad::operator=(const 
 	return(*this);
 }
 
-void OpenUtility::CTextureMultiQuad::AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex)
+void OpenUtility::CTextureMultiQuad::AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex) const
 {
 	glBindBuffer(GL_ARRAY_BUFFER,VBObuffer);
 	glVertexAttribPointer(vPos,3,GL_FLOAT,GL_FALSE,sizeof(SVertex),(void*)offsetof(SVertex,position));
@@ -62,7 +62,7 @@ void OpenUtility::CTextureMultiQuad::AttachAttribToData(GLuint vPos,GLuint vNorm
 	glBindTexture(GL_TEXTURE_2D,Texture->GetId());
 }
 
-void OpenUtility::CTextureMultiQuad::Draw(unsigned int i)
+void OpenUtility::CTextureMultiQuad::Draw(unsigned int i) const
 {
 	if ((i<Quads.GetSize()) && Quads[i]!=NULL)
 		glDrawArrays(GL_TRIANGLE_STRIP,i*4,4);
@@ -72,7 +72,7 @@ void OpenUtility::CTextureMultiQuad::GenQuads(CVector<SQuad> &quads)
 {
 	if (!Texture) return;
 	SQuad *quad;
-	double ratioT,w,h;
+	double w,h;
 	double w2,h2,tx,ty,tw,th;
 
 	VertexTab=new SVertex[4*quads.GetSize()];
@@ -85,21 +85,12 @@ void OpenUtility::CTextureMultiQuad::GenQuads(CVector<SQuad> &quads)
 			continue;
 		}
 
-		ratioT=double(quad->w)/quad->h;
-		if (quad->maxW/quad->maxH>ratioT)
-		{
-			h=quad->maxH;
-			w=h*ratioT;
-		}
-		else
-		{
-			w=quad->maxW;
-			h=w/ratioT;
-		}
+		w=quad->imW;
+		h=w/double(quad->w)*quad->h;
 		Quads.Add(new CQuad(this,i,w,h));
 
-		w2=w/2;
-		h2=h/2;
+		w2=w/2.0;
+		h2=h/2.0;
 		tx=double(quad->x)/Texture->GetWT();
 		ty=double(quad->y)/Texture->GetHT();
 		tw=double(quad->w)/Texture->GetWT();

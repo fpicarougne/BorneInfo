@@ -9,6 +9,8 @@
 #define CONCAT(...) __VA_ARGS__
 #define THROW(class,...) {class e(__VA_ARGS__);e.SetFileLine(__FILE__,__LINE__);throw(e);}
 
+#define DUMP(var) std::cout << #var << " = " << var << std::endl;
+
 namespace OpenUtility
 {
 

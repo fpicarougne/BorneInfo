@@ -44,6 +44,7 @@ public:
 	inline static CTexture* LoadTextureFile(const char *file,bool nonPowerOf2=false) {return(LoadTextureFile(file,0,0,nonPowerOf2));}
 	static CTexture* LoadTextureFile(const char *file,unsigned long w,unsigned long h,bool nonPowerOf2=false);
 	static CTexture* LoadTextureMemory(const unsigned char *buffer,unsigned long w,unsigned long h,EPicMode channel,bool nonPowerOf2=false);
+	static CTexture* InitTexture(unsigned long w,unsigned long h,EPicMode channel,bool nonPowerOf2=false);
 	inline GLuint GetId() const {return(TextureId);}
 	inline unsigned long GetW() const {return(w);}
 	inline unsigned long GetH() const {return(h);}

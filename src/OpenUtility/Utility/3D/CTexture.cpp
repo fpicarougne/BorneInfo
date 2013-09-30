@@ -50,6 +50,25 @@ OpenUtility::CTexture* OpenUtility::CTexture::LoadTextureFile(const char *file,u
 
 OpenUtility::CTexture* OpenUtility::CTexture::LoadTextureMemory(const unsigned char *buffer,unsigned long w,unsigned long h,EPicMode channel,bool nonPowerOf2)
 {
+	CTexture *texObj=InitTexture(w,h,EPModeRGBA,nonPowerOf2);
+
+	GLenum glMode;
+	switch (channel)
+	{
+	case EPModeA:glMode=GL_ALPHA;break;
+	case EPModeG:glMode=GL_LUMINANCE;break;
+	case EPModeGA:glMode=GL_LUMINANCE_ALPHA;break;
+	case EPModeRGB:glMode=GL_RGB;break;
+	case EPModeRGBA:glMode=GL_RGBA;break;
+	}
+
+	glTexSubImage2D(GL_TEXTURE_2D,0,0,0,w,h,glMode,GL_UNSIGNED_BYTE,buffer);
+
+	return(texObj);
+}
+
+OpenUtility::CTexture* OpenUtility::CTexture::InitTexture(unsigned long w,unsigned long h,EPicMode channel,bool nonPowerOf2)
+{
 	unsigned long wT,hT;
 	int i;
 	CTexture *texObj;
@@ -76,6 +95,7 @@ OpenUtility::CTexture* OpenUtility::CTexture::LoadTextureMemory(const unsigned c
 	texObj->wT=wT;
 	texObj->hT=hT;
 	texObj->Mode=channel;
+	if (texObj->TextureId==0) glGenTextures(1,&texObj->TextureId);
 
 	GLenum glMode;
 	switch (channel)
@@ -86,15 +106,11 @@ OpenUtility::CTexture* OpenUtility::CTexture::LoadTextureMemory(const unsigned c
 	case EPModeRGB:glMode=GL_RGB;break;
 	case EPModeRGBA:glMode=GL_RGBA;break;
 	}
-//std::cout<<std::endl<<std::endl<< "w="<<w<<" h="<<h<< " wT="<<wT<<" hT="<<hT<<std::endl;
-
-	if (texObj->TextureId==0) glGenTextures(1,&texObj->TextureId);
 
 	glBindTexture(GL_TEXTURE_2D,texObj->TextureId);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,wT,hT,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);
-	glTexSubImage2D(GL_TEXTURE_2D,0,0,0,w,h,glMode,GL_UNSIGNED_BYTE,buffer);
+	glTexImage2D(GL_TEXTURE_2D,0,glMode,wT,hT,0,glMode,GL_UNSIGNED_BYTE,NULL);
 
 	return(texObj);
 }

@@ -39,7 +39,7 @@ OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::SetIdentity()
 }
 
 template<class T>
-OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::operator*=(CMat4x4<T> &m)
+OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::operator*=(const CMat4x4<T> &m)
 {
 	Set(mat[0]*m.mat[0]+mat[4]*m.mat[1]+mat[8]*m.mat[2]+mat[12]*m.mat[3],
 		mat[1]*m.mat[0]+mat[5]*m.mat[1]+mat[9]*m.mat[2]+mat[13]*m.mat[3],
@@ -62,28 +62,28 @@ OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::operator*=(CMat4x4<T> &m)
 }
 
 template<class T>
-OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::operator+=(CMat4x4<T> &m)
+OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::operator+=(const CMat4x4<T> &m)
 {
 	for (int i=0;i<16;i++) mat[i]+=m.mat[i];
 	return(*this);
 }
 
 template<class T>
-OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::operator-=(CMat4x4<T> &m)
+OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::operator-=(const CMat4x4<T> &m)
 {
 	for (int i=0;i<16;i++) mat[i]-=m.mat[i];
 	return(*this);
 }
 
 template<class T>
-OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::operator*=(T s)
+OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::operator*=(const T s)
 {
 	for (int i=0;i<16;i++) mat[i]*=s;
 	return(*this);
 }
 
 template<class T>
-OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::operator+=(T s)
+OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::operator+=(const T s)
 {
 	for (int i=0;i<16;i++) mat[i]+=s;
 	return(*this);
@@ -200,7 +200,7 @@ OpenUtility::CMat4x4<T>& OpenUtility::CMat4x4<T>::SetRotate(T angle,T rx,T ry,T 
 {
 	T t;
 
-	if (fabs((t=rx*rx+ry*ry+rz*rz)-1)<0.000000001)
+	if (fabs((t=rx*rx+ry*ry+rz*rz)-1)>0.0000001)
 	{
 		if (t==0) return(*this);
 		t=sqrt(t);

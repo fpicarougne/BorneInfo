@@ -90,7 +90,7 @@ void OpenUtility::CTextureQuad::SetVertex(SVertex &vertex,double posX,double pos
 	vertex.texcoord[1]=texY;
 }
 
-void OpenUtility::CTextureQuad::AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex)
+void OpenUtility::CTextureQuad::AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex) const
 {
 	glBindBuffer(GL_ARRAY_BUFFER,VBObuffer);
 	glVertexAttribPointer(vPos,3,GL_FLOAT,GL_FALSE,sizeof(SVertex),(void*)offsetof(SVertex,position));
@@ -102,7 +102,7 @@ void OpenUtility::CTextureQuad::AttachAttribToData(GLuint vPos,GLuint vNorm,GLui
 	glBindTexture(GL_TEXTURE_2D,Texture->GetId());
 }
 
-void OpenUtility::CTextureQuad::Draw()
+void OpenUtility::CTextureQuad::Draw() const
 {
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 }

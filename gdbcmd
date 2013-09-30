@@ -1,0 +1,2 @@
+#target remote 192.168.0.5:3333
+set print elements 150

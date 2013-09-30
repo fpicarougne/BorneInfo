@@ -6,7 +6,7 @@
 #include <ctype.h>
 #include <Utility/FileSystem/FileHandling.h>
 #include <sys/types.h>
-#include <sys/time.h> 
+#include <sys/time.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -26,6 +26,7 @@ GlWindow::GlWindow() :
 	_end(true)
 	,idThreadEvent(0)
 	,Display(0)
+	,TimeUnit(0)
 {
 	// Control end of processes
 	_mutexEnd=OpenUtility::InitMutex();
@@ -113,7 +114,7 @@ bool GlWindow::CreateOpenGlContext()
 		EGL_NONE
 	};
 
-	static const EGLint context_attributes[] = 
+	static const EGLint context_attributes[] =
 	{
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
@@ -157,11 +158,11 @@ bool GlWindow::CreateOpenGlContext()
 	src_rect.x = 0;
 	src_rect.y = 0;
 	src_rect.width = ScrWidth << 16;
-	src_rect.height = ScrHeight << 16;        
+	src_rect.height = ScrHeight << 16;
 
 	dispman_display = vc_dispmanx_display_open( 0 /* LCD */);
 	dispman_update = vc_dispmanx_update_start( 0 );
-	 
+
 	dispman_element = vc_dispmanx_element_add ( dispman_update, dispman_display,
 		0/*layer*/, &dst_rect, 0/*src*/,
 		&src_rect, DISPMANX_PROTECTION_NONE, 0 /*alpha*/, 0/*clamp*/, (DISPMANX_TRANSFORM_T)0/*transform*/);
@@ -430,58 +431,70 @@ void GlWindow::ReadEvent(SPeripheral *periph)
 				for (unsigned int j=0;ListPeriph.GetSize() && (j<_SynEvt->GetSize());j++)
 				{
 					int val=_SynEvt->ElementAt(j).value;
-					switch(_SynEvt->ElementAt(j).type)
+					int valPeriph;
+
+					// _SynEvt->ElementAt(j).type : 0=Key Unpress | 1=Key Press | 2=Key keeping pressed
+					if (((val>=BTN_MOUSE) && (val<BTN_JOYSTICK)) || ((val>=BTN_DIGI) && (val<BTN_WHEEL)))
 					{
-					// Key released
-					case 0:
+						void (GlWindow::*event)(unsigned int,int,double,double)=NULL;
+						double x=0,y=0;
+						if (periph->GetAxes())
+						{
+							if (TEST_BIT(AXE_X,periph->GetAxes()->AxeMap)) x=periph->GetAxes()->AxeValues[AXE_X].GetValue();
+							if (TEST_BIT(AXE_Y,periph->GetAxes()->AxeMap)) y=periph->GetAxes()->AxeValues[AXE_Y].GetValue();
+						}
 						if ((val>=BTN_MOUSE) && (val<BTN_JOYSTICK))
 						{
-							double x=0,y=0;
-							if (periph->GetAxes())
-							{
-								if (TEST_BIT(AXE_X,periph->GetAxes()->AxeMap)) x=periph->GetAxes()->AxeValues[AXE_X].GetValue();
-								if (TEST_BIT(AXE_Y,periph->GetAxes()->AxeMap)) y=periph->GetAxes()->AxeValues[AXE_Y].GetValue();
-							}
+							valPeriph=val-BTN_MOUSE;
+							if (_SynEvt->ElementAt(j).type==0) event=&GlWindow::OnMouseButtonUp;
+							else if (_SynEvt->ElementAt(j).type==1) event=&GlWindow::OnMouseButtonDown;
+						}
+						else if ((val>=BTN_DIGI) && (val<BTN_WHEEL))
+						{
+							valPeriph=val;
+							if (_SynEvt->ElementAt(j).type==0) event=&GlWindow::OnTouchUp;
+							else if (_SynEvt->ElementAt(j).type==1) event=&GlWindow::OnTouchDown;
+						}
+						if (event)
+						{
 							OpenUtility::MutexUnlock(_mutexEnd);
-							OnMouseButtonUp(id,val-BTN_MOUSE,x,y);
+							(this->*event)(id,valPeriph,x,y);
 							OpenUtility::MutexLock(_mutexEnd);
+						}
+					}
+					else
+					{
+						void (GlWindow::*event)(unsigned int,int)=NULL;
+						if ((val>=BTN_MISC) && (val<BTN_MOUSE))
+						{
+							valPeriph=val-BTN_MISC;
+							if (_SynEvt->ElementAt(j).type==0) event=&GlWindow::OnButtonUp;
+							else if (_SynEvt->ElementAt(j).type==1) event=&GlWindow::OnButtonDown;
+						}
+						else if ((val>=BTN_JOYSTICK) && (val<BTN_GAMEPAD))
+						{
+							valPeriph=val-BTN_JOYSTICK;
+							if (_SynEvt->ElementAt(j).type==0) event=&GlWindow::OnJoystickButtonUp;
+							else if (_SynEvt->ElementAt(j).type==1) event=&GlWindow::OnJoystickButtonDown;
+						}
+						else if ((val>=BTN_GAMEPAD) && (val<BTN_DIGI))
+						{
+							valPeriph=val-BTN_GAMEPAD;
+							if (_SynEvt->ElementAt(j).type==0) event=&GlWindow::OnGamepadButtonUp;
+							else if (_SynEvt->ElementAt(j).type==1) event=&GlWindow::OnGamepadButtonDown;
 						}
 						else
 						{
-							OpenUtility::MutexUnlock(_mutexEnd);
-							if ((val>=BTN_MISC) && (val<BTN_MOUSE)) OnButtonUp(periph->GetId(),val-BTN_MISC);
-							else if ((val>=BTN_JOYSTICK) && (val<BTN_GAMEPAD)) OnJoystickButtonUp(id,val-BTN_JOYSTICK);
-							else if ((val>=BTN_GAMEPAD) && (val<BTN_DIGI)) OnGamepadButtonUp(id,val-BTN_GAMEPAD);
-							else OnKeyUp(id,val);
-							OpenUtility::MutexLock(_mutexEnd);
+							valPeriph=val;
+							if (_SynEvt->ElementAt(j).type==0) event=&GlWindow::OnKeyUp;
+							else if (_SynEvt->ElementAt(j).type==1) event=&GlWindow::OnKeyDown;
 						}
-						break;
-					// Key pressed
-					case 1:
-						if ((val>=BTN_MOUSE) && (val<BTN_JOYSTICK))
-						{
-							double x=0,y=0;
-							if (periph->GetAxes())
-							{
-								if (TEST_BIT(AXE_X,periph->GetAxes()->AxeMap)) x=periph->GetAxes()->AxeValues[AXE_X].GetValue();
-								if (TEST_BIT(AXE_Y,periph->GetAxes()->AxeMap)) y=periph->GetAxes()->AxeValues[AXE_Y].GetValue();
-							}
-							OpenUtility::MutexUnlock(_mutexEnd);
-							OnMouseButtonDown(id,val-BTN_MOUSE,x,y);
-							OpenUtility::MutexLock(_mutexEnd);
-						}
-						else
+						if (event)
 						{
 							OpenUtility::MutexUnlock(_mutexEnd);
-							if ((val>=BTN_MISC) && (val<BTN_MOUSE)) OnButtonDown(id,val-BTN_MISC);
-							else if ((val>=BTN_JOYSTICK) && (val<BTN_GAMEPAD)) OnJoystickButtonDown(id,val-BTN_JOYSTICK);
-							else if ((val>=BTN_GAMEPAD) && (val<BTN_DIGI)) OnGamepadButtonDown(id,val-BTN_GAMEPAD);
-							else OnKeyDown(id,val);
+							(this->*event)(id,valPeriph);
 							OpenUtility::MutexLock(_mutexEnd);
 						}
-						break;
-					// Key keeping pressed
-					case 2:break;
 					}
 				}
 				if (ListPeriph.GetSize()) _SynEvt->DeleteAll();
@@ -692,7 +705,8 @@ void GlWindow::MainLoop()
 {
 	struct timespec curTime;
 	struct timespec waitTime={0,10000000};
-	unsigned long long millisec;
+
+	const int nbFramePerSec=30;
 
 	Init();
 	GL_CHECK();
@@ -702,9 +716,9 @@ void GlWindow::MainLoop()
 	{
 		clock_gettime(CLOCK_MONOTONIC,&curTime);
 		waitTime=DiffTime(_debTime,curTime);
-		millisec=waitTime.tv_nsec/1000000+(waitTime.tv_sec%2000000)*1000;
+		TimeUnit=waitTime.tv_nsec/1000000+(waitTime.tv_sec%2000000)*1000;
 
-		if (PreRender(millisec) /*|| true*/)
+		if (PreRender() /*|| true*/)
 		{
 			Render();
 
@@ -716,13 +730,13 @@ void GlWindow::MainLoop()
 		}
 		clock_gettime(CLOCK_MONOTONIC,&waitTime);
 		waitTime=DiffTime(curTime,waitTime);
-		if ((waitTime.tv_sec==0) && (waitTime.tv_nsec<(1000000000/30)))
+		if ((waitTime.tv_sec==0) && (waitTime.tv_nsec<(1000000000/nbFramePerSec)))
 		{
-			waitTime.tv_nsec=1000000000/30-waitTime.tv_nsec;
+			waitTime.tv_nsec=1000000000/nbFramePerSec-waitTime.tv_nsec;
 			nanosleep(&waitTime,NULL);
 		}
 	}
-	Uninit();
+	UnInit();
 	_CloseWindow();
 }
 

@@ -21,10 +21,10 @@ OpenUtility::CGalStream::~CGalStream()
 {
 }
 
-/*OpenUtility::CGalStream::operator char* () const
+OpenUtility::CGalStream::operator const char* () const
 {
 	return(Stream);
-}*/
+}
 
 std::ostream& OpenUtility::operator<<(std::ostream &out,const OpenUtility::CGalStream &S)
 {

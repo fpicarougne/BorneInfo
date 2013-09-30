@@ -32,7 +32,7 @@ class STREAM_API CGalStream
 public:
 	CGalStream();
 	virtual ~CGalStream();
-//	operator char*() const;	// deleted because bad explicit conversion on compare stream!
+	operator const char*() const;
 
 protected:
 	char *Stream;

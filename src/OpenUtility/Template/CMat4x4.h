@@ -1,6 +1,7 @@
 #ifndef _CMat4x4_h
 	#define _CMat4x4_h
 
+#include "CVec4.h"
 #include <string.h>
 #include <iostream>
 
@@ -45,14 +46,14 @@ public:
 	inline CMat4x4<T>& Set(unsigned int i,unsigned int j,T val) {mat[i+j*4]=val;return(*this);}
 
 	// Math operations
-	CMat4x4<T>& operator*=(CMat4x4<T> &m);
-	CMat4x4<T>& operator+=(CMat4x4<T> &m);
-	CMat4x4<T>& operator-=(CMat4x4<T> &m);
-	CMat4x4<T>& operator*=(T s);
-	inline CMat4x4<T>& operator/=(T s) {return((*this)*=1/s);}
-	CMat4x4<T>& operator+=(T s);
-	inline CMat4x4<T>& operator-=(T s) {return((*this)+=-s);}
-	friend inline CMat4x4<T> operator*(CMat4x4<T> &m1,CMat4x4<T> &m2)
+	CMat4x4<T>& operator*=(const CMat4x4<T> &m);
+	CMat4x4<T>& operator+=(const CMat4x4<T> &m);
+	CMat4x4<T>& operator-=(const CMat4x4<T> &m);
+	CMat4x4<T>& operator*=(const T s);
+	inline CMat4x4<T>& operator/=(const T s) {return((*this)*=1/s);}
+	CMat4x4<T>& operator+=(const T s);
+	inline CMat4x4<T>& operator-=(const T s) {return((*this)+=-s);}
+	friend inline CMat4x4<T> operator*(const CMat4x4<T> &m1,const CMat4x4<T> &m2)
 	{
 		return(CMat4x4<T>(	m1.mat[0]*m2.mat[0]+m1.mat[4]*m2.mat[1]+m1.mat[8]*m2.mat[2]+m1.mat[12]*m2.mat[3],
 							m1.mat[1]*m2.mat[0]+m1.mat[5]*m2.mat[1]+m1.mat[9]*m2.mat[2]+m1.mat[13]*m2.mat[3],
@@ -71,30 +72,37 @@ public:
 							m1.mat[2]*m2.mat[12]+m1.mat[6]*m2.mat[13]+m1.mat[10]*m2.mat[14]+m1.mat[14]*m2.mat[15],
 							m1.mat[3]*m2.mat[12]+m1.mat[7]*m2.mat[13]+m1.mat[11]*m2.mat[14]+m1.mat[15]*m2.mat[15]));
 	}
-	friend inline CMat4x4<T> operator+(CMat4x4<T> &m1,CMat4x4<T> &m2)
+	friend inline CVec4<T> operator*(const CMat4x4<T> &m,const CVec4<T> &v)
+	{
+		return(CVec4<T>(m.mat[0]*v.x+m.mat[4]*v.y+m.mat[8]*v.z+m.mat[12]*v.w,
+						m.mat[1]*v.x+m.mat[5]*v.y+m.mat[9]*v.z+m.mat[13]*v.w,
+						m.mat[2]*v.x+m.mat[6]*v.y+m.mat[10]*v.z+m.mat[14]*v.w,
+						m.mat[3]*v.x+m.mat[7]*v.y+m.mat[11]*v.z+m.mat[15]*v.w));
+	}
+	friend inline CMat4x4<T> operator+(const CMat4x4<T> &m1,const CMat4x4<T> &m2)
 	{
 		return(CMat4x4<T>(	m1.mat[0]+m2.mat[0],m1.mat[1]+m2.mat[1],m1.mat[2]+m2.mat[2],m1.mat[3]+m2.mat[3],
 							m1.mat[4]+m2.mat[4],m1.mat[5]+m2.mat[5],m1.mat[6]+m2.mat[6],m1.mat[7]+m2.mat[7],
 							m1.mat[8]+m2.mat[8],m1.mat[9]+m2.mat[9],m1.mat[10]+m2.mat[10],m1.mat[11]+m2.mat[11],
 							m1.mat[12]+m2.mat[12],m1.mat[13]+m2.mat[13],m1.mat[14]+m2.mat[14],m1.mat[15]+m2.mat[15]));
 	}
-	friend inline CMat4x4<T> operator-(CMat4x4<T> &m1,CMat4x4<T> &m2)
+	friend inline CMat4x4<T> operator-(const CMat4x4<T> &m1,const CMat4x4<T> &m2)
 	{
 		return(CMat4x4<T>(	m1.mat[0]-m2.mat[0],m1.mat[1]-m2.mat[1],m1.mat[2]-m2.mat[2],m1.mat[3]-m2.mat[3],
 							m1.mat[4]-m2.mat[4],m1.mat[5]-m2.mat[5],m1.mat[6]-m2.mat[6],m1.mat[7]-m2.mat[7],
 							m1.mat[8]-m2.mat[8],m1.mat[9]-m2.mat[9],m1.mat[10]-m2.mat[10],m1.mat[11]-m2.mat[11],
 							m1.mat[12]-m2.mat[12],m1.mat[13]-m2.mat[13],m1.mat[14]-m2.mat[14],m1.mat[15]-m2.mat[15]));
 	}
-	friend inline CMat4x4<T> operator+(T s,CMat4x4<T> &m) {return(m+s);}
-	friend inline CMat4x4<T> operator+(CMat4x4<T> &m,T s)
+	friend inline CMat4x4<T> operator+(const T s,const CMat4x4<T> &m) {return(m+s);}
+	friend inline CMat4x4<T> operator+(const CMat4x4<T> &m,const T s)
 	{
 		return(CMat4x4<T>(	m.mat[0]+s,m.mat[1]+s,m.mat[2]+s,m.mat[3]+s,
 							m.mat[4]+s,m.mat[5]+s,m.mat[6]+s,m.mat[7]+s,
 							m.mat[8]+s,m.mat[9]+s,m.mat[10]+s,m.mat[11]+s,
 							m.mat[12]+s,m.mat[13]+s,m.mat[14]+s,m.mat[15]+s));
 	}
-	friend inline CMat4x4<T> operator-(T s,CMat4x4<T> &m) {return(m-s);}
-	friend inline CMat4x4<T> operator-(CMat4x4<T> &m,T s)
+	friend inline CMat4x4<T> operator-(const T s,const CMat4x4<T> &m) {return(m-s);}
+	friend inline CMat4x4<T> operator-(const CMat4x4<T> &m,const T s)
 	{
 		return(CMat4x4<T>(	m.mat[0]-s,m.mat[1]-s,m.mat[2]-s,m.mat[3]-s,
 							m.mat[4]-s,m.mat[5]-s,m.mat[6]-s,m.mat[7]-s,

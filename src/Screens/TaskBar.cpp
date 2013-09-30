@@ -1,140 +1,8 @@
 //coding: utf-8
 #include "TaskBar.h"
 
-static const char QuadVertex[]="\
-attribute vec4 vPos;\n\
-attribute vec3 vNorm;\n\
-attribute vec4 vColor;\n\
-\n\
-uniform mat4 u_MVPmatrix;\n\
-uniform mat4 u_Nmatrix;\n\
-\n\
-varying vec4 v_Color;\n\
-varying vec3 v_Normal;\n\
-\n\
-void main()\n\
-{\n\
-	v_Color = vColor;\n\
-	v_Normal = mat3(u_Nmatrix) * vNorm;\n\
-	gl_Position = u_MVPmatrix * vPos;\n\
-}\n\
-";
-
-static const char QuadFragment[]="\
-precision mediump float;\n\
-\n\
-uniform float u_Alpha;\n\
-\n\
-varying vec4 v_Color;\n\
-varying vec3 v_Normal;\n\
-\n\
-void main()\n\
-{\n\
-	gl_FragColor = vec4(v_Color.rgb,v_Color.a*u_Alpha);\n\
-}\n\
-";
-
-//#############################################################################################
-
-CTaskBar::CQuad::CQuad(double x1,double y1,double x2,double y2,double r,double g,double b,double a)
-{
-	SVertex VertexArray[4];
-
-	OpenUtility::RGBAd color(r,g,b,a);
-	Update(VertexArray,x1,y1,x2,y2,color,color,color,color);
-	glGenBuffers(1,&VBObuffer);
-	glBindBuffer(GL_ARRAY_BUFFER,VBObuffer);
-	glBufferData(GL_ARRAY_BUFFER,sizeof(VertexArray),VertexArray,GL_DYNAMIC_DRAW);
-}
-
-CTaskBar::CQuad::CQuad(double x1,double y1,double x2,double y2,const OpenUtility::RGBAd &tl,const OpenUtility::RGBAd &tr,const OpenUtility::RGBAd &bl,const OpenUtility::RGBAd &br)
-{
-	SVertex VertexArray[4];
-
-	Update(VertexArray,x1,y1,x2,y2,tl,tr,bl,br);
-	glGenBuffers(1,&VBObuffer);
-	glBindBuffer(GL_ARRAY_BUFFER,VBObuffer);
-	glBufferData(GL_ARRAY_BUFFER,sizeof(VertexArray),VertexArray,GL_DYNAMIC_DRAW);
-}
-
-CTaskBar::CQuad::~CQuad()
-{
-	glDeleteBuffers(1,&VBObuffer);
-}
-
-void CTaskBar::CQuad::UpdateCoord(double x1,double y1,double x2,double y2,double r,double g,double b,double a)
-{
-	OpenUtility::RGBAd color(r,g,b,a);
-	UpdateCoord(x1,y1,x2,y2,color,color,color,color);
-}
-
-void CTaskBar::CQuad::UpdateCoord(double x1,double y1,double x2,double y2,const OpenUtility::RGBAd &tl,const OpenUtility::RGBAd &tr,const OpenUtility::RGBAd &bl,const OpenUtility::RGBAd &br)
-{
-	SVertex VertexArray[4];
-
-	Update(VertexArray,x1,y1,x2,y2,tl,tr,bl,br);
-	glBindBuffer(GL_ARRAY_BUFFER,VBObuffer);
-	glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(VertexArray),VertexArray);
-}
-
-void CTaskBar::CQuad::Update(SVertex VertexArray[4],double x1,double y1,double x2,double y2,const OpenUtility::RGBAd &tl,const OpenUtility::RGBAd &tr,const OpenUtility::RGBAd &bl,const OpenUtility::RGBAd &br)
-{
-	double t;
-
-	if (x1>x2)
-	{
-		t=x1;
-		x1=x2;
-		x2=t;
-	}
-	if (y1>y2)
-	{
-		t=y1;
-		y1=y2;
-		y2=t;
-	}
-
-	SetVertex(VertexArray[0],x1,y1,bl.r,bl.g,bl.b,bl.a);
-	SetVertex(VertexArray[1],x2,y1,br.r,br.g,br.b,br.a);
-	SetVertex(VertexArray[2],x1,y2,tl.r,tl.g,tl.b,tl.a);
-	SetVertex(VertexArray[3],x2,y2,tr.r,tr.g,tr.b,tr.a);
-}
-
-void CTaskBar::CQuad::SetVertex(SVertex &vertex,double posX,double posY,double r,double g,double b,double a)
-{
-	vertex.position[0]=posX;
-	vertex.position[1]=posY;
-	vertex.position[2]=0;
-	vertex.normal[0]=0;
-	vertex.normal[1]=0;
-	vertex.normal[2]=1.0;
-	vertex.color[0]=r;
-	vertex.color[1]=g;
-	vertex.color[2]=b;
-	vertex.color[3]=a;
-}
-
-void CTaskBar::CQuad::AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vColor)
-{
-	glBindBuffer(GL_ARRAY_BUFFER,VBObuffer);
-	glVertexAttribPointer(vPos,3,GL_FLOAT,GL_FALSE,sizeof(SVertex),(void*)offsetof(SVertex,position));
-	glVertexAttribPointer(vNorm,3,GL_FLOAT,GL_FALSE,sizeof(SVertex),(void*)offsetof(SVertex,normal));
-	glVertexAttribPointer(vColor,4,GL_FLOAT,GL_FALSE,sizeof(SVertex),(void*)offsetof(SVertex,color));
-	glEnableVertexAttribArray(vPos);
-	glEnableVertexAttribArray(vNorm);
-	glEnableVertexAttribArray(vColor);
-}
-
-void CTaskBar::CQuad::Draw()
-{
-	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
-}
-
-//#############################################################################################
-
-CTaskBar::CTaskBar(IRenderingObjectComm *pClass) :
+CTaskBar::CTaskBar(IRenderingObjectComm *pClass,double height) :
 	IRenderingObject(pClass),
-	QuadShader(NULL),
 	Font30(NULL),
 	Font50(NULL),
 	Day(NULL),
@@ -143,7 +11,7 @@ CTaskBar::CTaskBar(IRenderingObjectComm *pClass) :
 	Seconds(NULL),
 	Logo(NULL),
 	Background(NULL),
-	Bg(NULL)
+	TaskBarHeight(height)
 {
 }
 
@@ -187,14 +55,6 @@ void CTaskBar::SetMatrix(OpenUtility::CMat4x4<float> &p,OpenUtility::CMat4x4<flo
 
 void CTaskBar::Init()
 {
-	QuadShader=new SShaders;
-	if (!QuadShader->ShaderVertex.LoadStream(QuadVertex))
-		std::cout << "-----------------------------------\nCTaskBar: Erreur vertex shader :\n" << QuadShader->ShaderVertex.GetLog() << std::endl << "--------------------------" << std::endl;
-	if (!QuadShader->ShaderFragment.LoadStream(QuadFragment))
-		std::cout << "-----------------------------------\nCTaskBar: Erreur fragment shader :\n" << QuadShader->ShaderFragment.GetLog() << std::endl << "--------------------------" << std::endl;
-	if (!QuadShader->RenderingShader.LinkProgram())
-		std::cout << "-----------------------------------\nCTaskBar: Erreur shader program :\n" << QuadShader->RenderingShader.GetLog() << std::endl << "--------------------------" << std::endl;
-
 	Font30=new OpenUtility::CFontLoader("../content/verdana.ttf",30);
 	Font50=new OpenUtility::CFontLoader("../content/verdana.ttf",50);
 	Day=new OpenUtility::C3DText(Font30,0.0,0.28,0.46,1.0,0.35);
@@ -202,8 +62,7 @@ void CTaskBar::Init()
 	HourMin=new OpenUtility::C3DText(Font50,0.0,0.28,0.46,1.0);
 	Seconds=new OpenUtility::C3DText(Font50,0.0,0.28,0.46,1.0,0.75);
 	Logo=new OpenUtility::CTextureQuad("../content/polytech.png",15,1.7);
-	Background=new CQuad(-0.5,-0.5,0.5,0.5);
-	Bg=new CQuad(-0.5,-0.5,0.5,0.5);
+	Background=new OpenUtility::CQuad(-0.5,-0.5,0.5,0.5);
 
 	Day->SetAlignement(OpenUtility::CFontLoader::IFontEngine::EHAlignRight,OpenUtility::CFontLoader::IFontEngine::EVAlignBaseligne);
 	Date->SetAlignement(OpenUtility::CFontLoader::IFontEngine::EHAlignRight,OpenUtility::CFontLoader::IFontEngine::EVAlignBaseligne);
@@ -215,7 +74,6 @@ void CTaskBar::Init()
 
 void CTaskBar::UnInit()
 {
-	delete Bg;
 	delete Background;
 	delete Logo;
 	delete Day;
@@ -224,10 +82,9 @@ void CTaskBar::UnInit()
 	delete Seconds;
 	delete Font30;
 	delete Font50;
-	delete QuadShader;
 }
 
-bool CTaskBar::PreRender(unsigned long long timeUnit)
+bool CTaskBar::PreRender()
 {
 	struct tm timeTM;
 	bool hasChanged;
@@ -235,6 +92,7 @@ bool CTaskBar::PreRender(unsigned long long timeUnit)
 	OpenUtility::CStream strTime;
 	time_t timeStamp;
 	static bool isFirstRendering=true;
+	unsigned long long timeUnit=pClass->GetTimeUnit();
 
 	if (isFirstRendering)
 	{
@@ -272,15 +130,14 @@ bool CTaskBar::PreRender(unsigned long long timeUnit)
 	{
 		const OpenUtility::SFrustum &frustum=pClass->GetFrustum();
 		double dist=OpenUtility::v3dModule(pClass->GetCameraPos().GetPos());
-		double l,r,t,b;
-		double taskBarHeight=1.8;
+		double l,r,b;
+		OpenUtility::CMat4x4<float> MVPmatrixBackground;
 
 		r=dist*frustum.pRight/frustum.pNear;
 		l=dist*frustum.pLeft/frustum.pNear;
-		t=dist*frustum.pTop/frustum.pNear;
 		b=dist*frustum.pBottom/frustum.pNear;
 
-		MVPmatrixSeconds=MVPmatrixBg=ProjectionMatrix*ModelViewMatrix;
+		MVPmatrixSeconds=ProjectionMatrix*ModelViewMatrix;
 		if (Anims.HideTaskBar || Anims.ShowTaskBar)
 		{
 			double translationFactor;
@@ -302,7 +159,7 @@ bool CTaskBar::PreRender(unsigned long long timeUnit)
 			{
 				TaskBarAlpha=dir;
 				translationFactor=1-dir;
-if (Anims.HideTaskBar) Anims.ShowTaskBar=new SAnim(timeUnit,500);
+//if (Anims.HideTaskBar) Anims.ShowTaskBar=new SAnim(timeUnit,500);
 				delete *anim;
 				*anim=NULL;
 			}
@@ -314,7 +171,7 @@ if (Anims.HideTaskBar) Anims.ShowTaskBar=new SAnim(timeUnit,500);
 				translationFactor=dir+(1-dir*2)*(*anim)->GetTimeRatio(timeUnit);
 			}
 			OpenUtility::CMat4x4<float> translationMatrix;
-			translationMatrix.SetTranslate(0,-taskBarHeight*translationFactor,0);
+			translationMatrix.SetTranslate(0,-TaskBarHeight*translationFactor,0);
 			MVPmatrixSeconds*=translationMatrix;
 			OpenUtility::RGBAd color(0.0,0.28,0.46,TaskBarAlpha);
 			Day->SetDefaultShaderColor(color);
@@ -326,18 +183,16 @@ if (Anims.HideTaskBar) Anims.ShowTaskBar=new SAnim(timeUnit,500);
 
 		MVPmatrixSeconds*=OpenUtility::CMat4x4<float>().SetTranslate(r-0.5,b,0);
 		MVPmatrixLogo*=OpenUtility::CMat4x4<float>().SetTranslate(0,b,0);
-		Background->UpdateCoord(l,0,r,taskBarHeight,OpenUtility::RGBAd(1.0,1.0,1.0,1.0),OpenUtility::RGBAd(1.0,1.0,1.0,1.0),OpenUtility::RGBAd(0.7,0.7,0.7,1.0),OpenUtility::RGBAd(0.7,0.7,0.7,1.0));
+		Background->SetAlpha(TaskBarAlpha);
+		Background->UpdateCoord(l,0,r,TaskBarHeight,OpenUtility::RGBAd(1.0,1.0,1.0,1.0),OpenUtility::RGBAd(1.0,1.0,1.0,1.0),OpenUtility::RGBAd(0.7,0.7,0.7,1.0),OpenUtility::RGBAd(0.7,0.7,0.7,1.0));
 		MVPmatrixBackground*=OpenUtility::CMat4x4<float>().SetTranslate(0,b,0);
 
-		double alphaBg=1;
 		if (Anims.ShowRotateTaskBar)
 		{
 			if (Anims.ShowRotateTaskBar->IsEndAnim(timeUnit))
 			{
 				delete Anims.ShowRotateTaskBar;
 				Anims.ShowRotateTaskBar=NULL;
-Anims.HideTaskBar=new SAnim(timeUnit,500);
-				alphaBg=1;
 			}
 			else
 			{
@@ -346,25 +201,25 @@ Anims.HideTaskBar=new SAnim(timeUnit,500);
 				MVPmatrixSeconds*=rotationMatrix;
 				MVPmatrixLogo*=rotationMatrix;
 				MVPmatrixBackground*=rotationMatrix;
-				alphaBg=Anims.ShowRotateTaskBar->GetTimeRatio(timeUnit);
 			}
 		}
 
+//TODO: Normal matrix is incorect!!!
+		Background->SetDefaultShaderMatrix(MVPmatrixBackground,ModelViewMatrix);
+
+		double timeDecal=(TaskBarHeight-1.0)/2.0+0.1;
 		MVPmatrixDay=MVPmatrixDate=MVPmatrixHourMin=MVPmatrixSeconds;
-		MVPmatrixDay*=OpenUtility::CMat4x4<float>().SetTranslate(-4.3,0.4+0.5,0);
-		MVPmatrixDate*=OpenUtility::CMat4x4<float>().SetTranslate(-4.3,0.05+0.5,0);
-		MVPmatrixHourMin*=OpenUtility::CMat4x4<float>().SetTranslate(-1.1,0+0.5,0);
-		MVPmatrixSeconds*=OpenUtility::CMat4x4<float>().SetTranslate(0,0.18+0.5,0);
+		MVPmatrixDay*=OpenUtility::CMat4x4<float>().SetTranslate(-4.3,0.4+timeDecal,0);
+		MVPmatrixDate*=OpenUtility::CMat4x4<float>().SetTranslate(-4.3,0.05+timeDecal,0);
+		MVPmatrixHourMin*=OpenUtility::CMat4x4<float>().SetTranslate(-1.1,0+timeDecal,0);
+		MVPmatrixSeconds*=OpenUtility::CMat4x4<float>().SetTranslate(0,0.18+timeDecal,0);
 
 		Day->SetDefaultShaderMatrix(MVPmatrixDay);
 		Date->SetDefaultShaderMatrix(MVPmatrixDate);
 		HourMin->SetDefaultShaderMatrix(MVPmatrixHourMin);
 		Seconds->SetDefaultShaderMatrix(MVPmatrixSeconds);
 
-		MVPmatrixLogo*=OpenUtility::CMat4x4<float>().SetTranslate(l+Logo->GetW()/2+0.7,taskBarHeight/2,0);
-
-		Bg->UpdateCoord(l*frustum.pFar,b*frustum.pFar,r*frustum.pFar,t*frustum.pFar,OpenUtility::RGBAd(1.0,1.0,1.0,alphaBg),OpenUtility::RGBAd(1.0,1.0,1.0,alphaBg),OpenUtility::RGBAd(0.68,0.68,0.68,alphaBg),OpenUtility::RGBAd(0.68,0.68,0.68,alphaBg));
-		MVPmatrixBg*=OpenUtility::CMat4x4<float>().SetTranslate(0,0,-(frustum.pFar-dist));
+		MVPmatrixLogo*=OpenUtility::CMat4x4<float>().SetTranslate(l+Logo->GetW()/2+0.7,TaskBarHeight/2,0);
 
 		MatrixHasChanged=false;
 		hasChanged=true;
@@ -379,18 +234,6 @@ void CTaskBar::Render()
 	{
 		glDisable(GL_DEPTH_TEST);
 
-		QuadShader->RenderingShader.UseProgram();
-
-		glUniform1f(QuadShader->RenderingShader["u_Alpha"],1.0);
-		glUniformMatrix4fv(QuadShader->RenderingShader["u_MVPmatrix"],1,GL_FALSE,MVPmatrixBg.GetMatrix());
-		glUniformMatrix4fv(QuadShader->RenderingShader["u_Nmatrix"],1,GL_FALSE,ModelViewMatrix.GetMatrix());
-		Bg->AttachAttribToData(QuadShader->RenderingShader["vPos"],QuadShader->RenderingShader["vNorm"],QuadShader->RenderingShader["vColor"]);
-		Bg->Draw();
-
-		glUniform1f(QuadShader->RenderingShader["u_Alpha"],TaskBarAlpha);
-		glUniformMatrix4fv(QuadShader->RenderingShader["u_MVPmatrix"],1,GL_FALSE,MVPmatrixBackground.GetMatrix());
-		glUniformMatrix4fv(QuadShader->RenderingShader["u_Nmatrix"],1,GL_FALSE,ModelViewMatrix.GetMatrix());
-		Background->AttachAttribToData(QuadShader->RenderingShader["vPos"],QuadShader->RenderingShader["vNorm"],QuadShader->RenderingShader["vColor"]);
 		Background->Draw();
 
 		pClass->GetGlobalShader().UseProgram();

@@ -6,7 +6,7 @@
 
 # Macros
 TOP=`pwd`
-CND_PLATFORM=GNU_linaro_ARM-Linux-x86
+CND_PLATFORM=raspberry_pi_arm-Windows
 CND_CONF=Default
 CND_DISTDIR=dist
 CND_BUILDDIR=build

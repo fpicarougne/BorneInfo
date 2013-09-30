@@ -14,8 +14,8 @@ public:
 	virtual const CTexture* GetTexture() const =0;
 	virtual double GetW() const =0;
 	virtual double GetH() const =0;
-	virtual void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex)=0;
-	virtual void Draw()=0;
+	virtual void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex) const =0;
+	virtual void Draw() const =0;
 };
 
 class CTextureQuad : public ITextureQuad
@@ -37,8 +37,8 @@ public:
 	inline const CTexture* GetTexture() const {return(Texture);}
 	inline double GetW() const {return(w);}
 	inline double GetH() const {return(h);}
-	void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex);
-	void Draw();
+	void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex) const;
+	void Draw() const;
 
 private:
 	void CalcSize(double maxW,double maxH);

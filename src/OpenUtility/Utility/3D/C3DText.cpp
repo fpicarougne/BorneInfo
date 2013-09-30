@@ -299,7 +299,7 @@ void OpenUtility::C3DText::DefaultAttachAttribToData(GLuint vPos,GLuint vNorm,GL
 		glVertexAttribPointer(vNorm,3,GL_FLOAT,GL_FALSE,sizeof(SVertex),(void*)offsetof(SVertex,normal));
 		glEnableVertexAttribArray(vNorm);
 	}
-	else 
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D,FontLoader->GetFontTexture()->GetId());
 }
 
@@ -311,6 +311,7 @@ void OpenUtility::C3DText::Draw()
 		glUniform4f(DefaultShader->RenderingShader["vColor"],DefColor.r,DefColor.g,DefColor.b,DefColor.a);
 		glUniformMatrix4fv(DefaultShader->RenderingShader["u_MVPmatrix"],1,GL_FALSE,DefMVPmatrix.GetMatrix());
 		DefaultAttachAttribToData(DefaultShader->RenderingShader["vPos"],0,DefaultShader->RenderingShader["vTexCoord"]);
+		glUniform1i(DefaultShader->RenderingShader["u_texId"],0);
 	}
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,VBIBuffer);
 	glDrawElements(GL_TRIANGLES,6*Text.GetSize(),GL_UNSIGNED_BYTE,(GLvoid*)0);

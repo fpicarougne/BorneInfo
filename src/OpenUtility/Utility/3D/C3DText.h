@@ -47,13 +47,13 @@ public:
 	void SetAlignement(EHAlign hAlign=EHAlignLeft,EVAlign vAlign=EVAlignBaseligne);
 	double GetWidth();
 	double GetHeight();
-    void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex);
-    void AttachAttribToData(GLuint vPos,GLuint vTex);
+	void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex);
+	void AttachAttribToData(GLuint vPos,GLuint vTex);
 	void Draw();
 
 private:
 	C3DText& operator=(const C3DText &obj);	//TODO: temporaire
-    void CommonInit();
+	void CommonInit();
 	void SetVertex(SVertex &vertex,double posX,double posY,double texX,double texY);
 	void DefaultAttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex);
 
@@ -63,15 +63,15 @@ private:
 	bool IsDefaultShaderInUse;
 	CMat4x4<float> DefMVPmatrix;
 	RGBAd DefColor;
-    CStream Text;
-    EHAlign CurrentHAlign;
-    EVAlign CurrentVAlign;
+	CStream Text;
+	EHAlign CurrentHAlign;
+	EVAlign CurrentVAlign;
 	double ReqLineHeight;
-    SVertex *VertexTab;
+	SVertex *VertexTab;
 	GLubyte *ElementTab;
-    GLuint VBObuffer;
+	GLuint VBObuffer;
 	GLuint VBIBuffer;
-    int TotalX,MinY,MaxY;
+	int TotalX,MinY,MaxY;
 };
 
 }

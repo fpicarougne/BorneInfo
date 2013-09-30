@@ -174,6 +174,7 @@ public:
 	static GlWindow::EPeriphAxe GetAxeFromInt(int val);
 	static const char* GetAxeName(GlWindow::EPeriphAxe axe);
 	static void CheckGl(const char *file,int line);
+	inline unsigned long long GetTimeUnit() {return(TimeUnit);}
 
 protected:
 	// Window information
@@ -187,8 +188,8 @@ protected:
 	void CloseWindow();
 	// OpenGL rendering
 	virtual void Init() {}
-	virtual void Uninit() {}
-	virtual bool PreRender(unsigned long long timeUnit) {return(true);}
+	virtual void UnInit() {}
+	virtual bool PreRender() {return(true);}
 	virtual void Render() {}
 	// Event catcher
 	virtual void OnPeripheralAdd(unsigned int id,const char *name,GlWindow::EPeriphType type) {}
@@ -205,6 +206,8 @@ protected:
 	virtual void OnButtonUp(unsigned int id,int b) {}
 	virtual void OnMouseButtonDown(unsigned int id,int b,double x,double y) {}
 	virtual void OnMouseButtonUp(unsigned int id,int b,double x,double y) {}
+	virtual void OnTouchDown(unsigned int id,int b,double x,double y) {}
+	virtual void OnTouchUp(unsigned int id,int b,double x,double y) {}
 	virtual void OnJoystickButtonDown(unsigned int id,int b) {}
 	virtual void OnJoystickButtonUp(unsigned int id,int b) {}
 	virtual void OnGamepadButtonDown(unsigned int id,int b) {}
@@ -250,6 +253,7 @@ private:
 	EGLContext Context;
 	// Event stuff
 	struct timespec _debTime;
+	unsigned long long TimeUnit;
 	MUTEX _mutexMouse;
 	OpenUtility::CListe<SPeripheral> ListPeriph;
 };

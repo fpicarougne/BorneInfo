@@ -8,6 +8,9 @@
     #endif
 #else
 	#include <execinfo.h>
+	#include <dlfcn.h>
+	#include <cxxabi.h>
+char **__backtrace_symbols(void *const *buffer, int size);
 #endif
 
 OpenUtility::Exception::Exception(const char *str,bool displayStack) :
@@ -52,18 +55,32 @@ OpenUtility::Exception::Exception(const char *str,bool displayStack) :
 	void *stack[30];
 	size_t nbFrame;
 	char **retValues;
+	Dl_info info;
 
 	nbFrame=backtrace(stack,30);
 	if ((retValues=backtrace_symbols(stack,nbFrame))!=NULL)
 	{
-		for (size_t i=0;i<nbFrame;i++)
+		for (size_t i=0;i<nbFrame-2;i++)
 		{
 			Stack+=retValues[i];
+			Stack+="\n\t";
+			dladdr(stack[i],&info);
+			Stack+=info.dli_fname;
+			Stack+="\n\t";
+char *strdemang;
+int status;
+strdemang=abi::__cxa_demangle(info.dli_sname,NULL,NULL,&status);
+			Stack+=strdemang;
+free(strdemang);
+			Stack+="\n\t";
+			Stack.AddFormatStream("stack: %p\n\t",stack[i]);
+			Stack.AddFormatStream("%d",(unsigned int)((unsigned int)stack[i] - (unsigned int)info.dli_saddr));
 			Stack+="\n";
 		}
 		free(retValues);
 	}
 #endif
+	UpdateStr();
 }
 
 OpenUtility::Exception::Exception(const OpenUtility::Exception &obj) :

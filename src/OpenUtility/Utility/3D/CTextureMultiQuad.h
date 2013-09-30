@@ -13,10 +13,10 @@ class CTextureMultiQuad
 public:
 	struct SQuad
 	{
-		SQuad(unsigned int x,unsigned int y,unsigned int w,unsigned int h,unsigned int maxw,double maxh) : x(x), y(y), w(w), h(h), maxW(maxw), maxH(maxh) {}
+		SQuad(unsigned int x,unsigned int y,unsigned int w,unsigned int h,double imW) : x(x), y(y), w(w), h(h), imW(imW) {}
 		unsigned int x,y;
 		unsigned int w,h;
-		double maxW,maxH;
+		double imW;
 	};
 
 	class CQuad : public ITextureQuad
@@ -32,8 +32,8 @@ public:
 		inline const CTexture* GetTexture() const {return(MultiQuad->GetTexture());}
 		inline double GetW() const {return(W);}
 		inline double GetH() const {return(H);}
-		inline void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex) {MultiQuad->AttachAttribToData(vPos,vNorm,vTex);}
-		inline void Draw() {MultiQuad->Draw(Id);}
+		inline void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex) const {MultiQuad->AttachAttribToData(vPos,vNorm,vTex);}
+		inline void Draw() const {MultiQuad->Draw(Id);}
 
 	private:
 		CTextureMultiQuad *MultiQuad;
@@ -56,8 +56,8 @@ public:
 	virtual ~CTextureMultiQuad();
 	CTextureMultiQuad& operator=(const CTextureMultiQuad &obj);
 	inline const CTexture* GetTexture() const {return(Texture);}
-	void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex);
-	void Draw(unsigned int i);
+	void AttachAttribToData(GLuint vPos,GLuint vNorm,GLuint vTex) const;
+	void Draw(unsigned int i) const;
 	inline unsigned int GetSize() const {return(Quads.GetSize());}
 	inline ITextureQuad* operator[](unsigned int i) {return(Quads[i]);}
 
